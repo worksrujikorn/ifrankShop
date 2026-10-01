@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex" />
+  <title>iFrank · เลือกธีม</title>
+  <script src="/assets/shared.js"></script>
+  <script>document.write(`<link href="${IFRANK.FONTS_URL}" rel="stylesheet" />`);</script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0c0b0e; color: #f4f1f7; font-family: 'Plus Jakarta Sans', 'Anuphan', system-ui, sans-serif; min-height: 100vh; padding: 36px 16px 80px; }
+    .top { max-width: 1100px; margin: 0 auto 26px; text-align: center; }
+    h1 { font-family: 'Outfit', 'Anuphan', sans-serif; font-size: 32px; font-weight: 800; }
+    .sub { color: #9a93a5; font-size: 13px; margin-top: 8px; line-height: 1.7; }
+    .sub b { color: #f4f1f7; }
+    .gallery { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
+    .theme { background: #16141a; border: 1px solid #26232c; border-radius: 26px; padding: 10px; transition: transform .2s, border-color .2s; }
+    .theme:hover { transform: translateY(-4px); border-color: #3b3645; }
+    .theme.current { border-color: #f4f1f7; box-shadow: 0 0 0 2px #f4f1f7; }
+    .meta { padding: 12px 6px 4px; }
+    .meta-top { display: flex; align-items: center; gap: 8px; }
+    .name { font-weight: 800; font-size: 15px; flex: 1; }
+    .now { font-size: 9px; font-weight: 900; letter-spacing: 1px; background: #f4f1f7; color: #0c0b0e; padding: 3px 7px; border-radius: 999px; }
+    .swatches { display: flex; gap: 3px; }
+    .swatches i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(255,255,255,.15); }
+    .desc { color: #9a93a5; font-size: 12px; margin-top: 4px; }
+    .btns { display: flex; gap: 6px; margin-top: 12px; }
+    .btn { flex: 1; text-align: center; text-decoration: none; font-weight: 700; font-size: 12px; padding: 10px; border-radius: 12px; border: 1px solid #3b3645; color: #f4f1f7; }
+    .btn.primary { background: #f4f1f7; color: #0c0b0e; border-color: #f4f1f7; }
+    .howto { max-width: 640px; margin: 36px auto 0; background: #16141a; border: 1px solid #26232c; border-radius: 18px; padding: 18px 20px; font-size: 13px; color: #b7b0c2; line-height: 1.8; }
+    .howto b { color: #f4f1f7; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <h1>🎨 เลือกธีมหน้าร้าน</h1>
+    <div class="sub">กด <b>ดูเต็มจอ</b> เพื่อดูเมนูจริงในธีมนั้น<br>ชอบธีมไหนแล้ว ไปเลือกใช้ที่ <b>/admin → ⚙️ ตั้งค่าร้าน → ธีม</b></div>
+  </div>
+
+  <div class="gallery" id="gallery"></div>
+
+  <div class="howto">
+    <b>วิธีเปลี่ยนธีมจริง</b><br>
+    1. เข้า <b>/admin</b> → แท็บ <b>⚙️ ตั้งค่าร้าน</b><br>
+    2. กดเลือกการ์ดธีมที่ต้องการ<br>
+    3. กด <b>บันทึก &amp; เผยแพร่</b> → ลูกค้าทุกคนเห็นธีมใหม่ทันที
+  </div>
+
+  <script>
+    const { THEMES, themePreviewHTML, injectThemePreviewCSS, store, DEFAULT_THEME } = IFRANK;
+    injectThemePreviewCSS();
+
+    (async () => {
+      let current = store.get('ifrank_theme', DEFAULT_THEME);
+      try { const res = await IFRANK.loadData(); current = IFRANK.themeKey(res.data.settings && res.data.settings.theme); } catch (_) {}
+
+      document.getElementById('gallery').innerHTML = Object.entries(THEMES).map(([k, t]) => `
+        <div class="theme ${k === current ? 'current' : ''}">
+          ${themePreviewHTML(k)}
+          <div class="meta">
+            <div class="meta-top">
+              <div class="name">${t.name}</div>
+              ${k === current ? '<span class="now">ใช้อยู่</span>' : ''}
+              <div class="swatches">${[t.vars.bg, t.vars.card, t.vars.accent, t.vars.accent2].map((c) => `<i style="background:${c}"></i>`).join('')}</div>
+            </div>
+            <div class="desc">${t.desc}</div>
+            <div class="btns">
+              <a class="btn primary" href="/?theme=${k}">ดูเต็มจอ</a>
+            </div>
+          </div>
+        </div>`).join('');
+    })();
+  </script>
+</body>
+</html>
