@@ -132,10 +132,10 @@
     /* ---------- SHEETS ---------- */
     .overlay { position: fixed; inset: 0; z-index: 60; background: var(--overlay); display: none; align-items: flex-end; justify-content: center; }
     .overlay.open { display: flex; }
-    .sheet { width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; background: var(--sheet); border: 1px solid var(--line2); border-bottom: 0; border-radius: 28px 28px 0 0; padding: 12px 20px calc(24px + var(--safe)); animation: up .3s cubic-bezier(.2,.9,.3,1.05); }
+    .sheet { width: 100%; max-width: 560px; max-height: 90vh; max-height: calc(100dvh - 48px - env(safe-area-inset-top)); overflow-y: auto; overscroll-behavior: contain; background: var(--sheet); border: 1px solid var(--line2); border-bottom: 0; border-radius: 28px 28px 0 0; padding: 12px 20px calc(24px + var(--safe)); animation: up .3s cubic-bezier(.2,.9,.3,1.05); }
     @keyframes up { from { transform: translateY(100%); } }
     .handle { width: 40px; height: 5px; border-radius: 3px; background: var(--line2); margin: 0 auto 16px; }
-    .sheet-x { position: sticky; top: 0; float: right; z-index: 2; width: 36px; height: 36px; margin: -4px -6px 0 0; border-radius: 50%; border: 1px solid var(--line2); background: var(--card); color: var(--text); font-size: 16px; display: grid; place-items: center; }
+    .sheet-x { position: sticky; top: 0; float: right; z-index: 2; width: 36px; height: 36px; margin: 0 -4px 0 0; border-radius: 50%; border: 1px solid var(--line2); background: var(--card); color: var(--text); font-size: 16px; display: grid; place-items: center; }
     .overlay.left { justify-content: flex-start; align-items: stretch; }
     .drawer { width: min(320px, 86vw); background: var(--sheet); border-right: 1px solid var(--line2); padding: 22px 16px; animation: slide .25s ease; overflow-y: auto; }
     @keyframes slide { from { transform: translateX(-100%); } }
