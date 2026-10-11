@@ -135,6 +135,7 @@
     .sheet { width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; background: var(--sheet); border: 1px solid var(--line2); border-bottom: 0; border-radius: 28px 28px 0 0; padding: 12px 20px calc(24px + var(--safe)); animation: up .3s cubic-bezier(.2,.9,.3,1.05); }
     @keyframes up { from { transform: translateY(100%); } }
     .handle { width: 40px; height: 5px; border-radius: 3px; background: var(--line2); margin: 0 auto 16px; }
+    .sheet-x { position: sticky; top: 0; float: right; z-index: 2; width: 36px; height: 36px; margin: -4px -6px 0 0; border-radius: 50%; border: 1px solid var(--line2); background: var(--card); color: var(--text); font-size: 16px; display: grid; place-items: center; }
     .overlay.left { justify-content: flex-start; align-items: stretch; }
     .drawer { width: min(320px, 86vw); background: var(--sheet); border-right: 1px solid var(--line2); padding: 22px 16px; animation: slide .25s ease; overflow-y: auto; }
     @keyframes slide { from { transform: translateX(-100%); } }
@@ -501,7 +502,7 @@
     }
 
     /* ================= ROUTER ================= */
-    function go(v) { closeAll(); if (location.hash !== '#' + v) location.hash = v; else route(); }
+    function go(v) { closeAll(() => { if (location.hash !== '#' + v) location.hash = v; else route(); }); }
     function route() {
       const v = (location.hash || '#shop').slice(1);
       view = ['shop', 'lab', 'orders', 'settings'].includes(v) ? v : 'shop';
@@ -614,6 +615,7 @@
       const terps = (p.terpenes || []).filter((t) => TERPENES[t.key]);
       $('productBody').style.cssText = cssVars(p);
       $('productBody').innerHTML = `
+        <button class="sheet-x" onclick="closeAll()" aria-label="ปิด">✕</button>
         <div class="handle"></div>
         <div class="p-top">
           <div class="p-emoji">${esc(p.emoji || '🌿')}</div>
@@ -743,7 +745,6 @@
       store.set('ifrank_orders', orders);
       currentOrderId = order.id;
       cart = []; saveCart(); store.del('ifrank_note');
-      closeAll();
       go('orders');
       toast('ออกใบสั่งซื้อแล้ว — แคปหน้าจอส่งในแชทได้เลย 📸');
     }
@@ -1005,14 +1006,32 @@
         delivery: ['🚚 การจัดส่ง', `<div class="small" style="font-size:13.5px">${esc(s.serviceNote || '')}<br><br>ค่าส่งและเวลาจัดส่ง แอดมินจะแจ้งในแชทหลังยืนยันออเดอร์</div>`],
         policy: ['🔞 นโยบาย 20+', '<div class="small" style="font-size:13.5px">จำหน่ายเฉพาะผู้มีอายุ 20 ปีบริบูรณ์ขึ้นไป<br>ห้ามจำหน่ายแก่สตรีมีครรภ์และสตรีให้นมบุตร<br>ร้านขอสงวนสิทธิ์ตรวจสอบอายุก่อนจัดส่ง</div>'],
       }[k];
-      closeAll();
+      hideOverlays();   // swap sheets but keep the history entry
       $('infoBody').innerHTML = `<div class="handle"></div><div class="h2" style="margin-bottom:14px">${c[0]}</div>${c[1]}<button class="btn btn-ghost btn-block" style="margin-top:20px" onclick="closeAll()">ปิด</button>`;
       open('infoSheet');
     }
     function openDrawer() { open('drawer'); }
-    function open(id) { $(id).classList.add('open'); document.body.style.overflow = 'hidden'; }
+    // Each open sheet owns one history entry, so the phone's back button / swipe-back closes it
+    // instead of leaving the shop.
+    let sheetEntry = false, backPending = false, afterClose = null;
+    function open(id) {
+      $(id).classList.add('open'); document.body.style.overflow = 'hidden';
+      if (!sheetEntry) { history.pushState({ sheet: 1 }, ''); sheetEntry = true; }
+    }
     function bgClose(e) { if (e.target.classList.contains('overlay')) closeAll(); }
-    function closeAll() { document.querySelectorAll('.overlay').forEach((o) => o.classList.remove('open')); document.body.style.overflow = ''; }
+    function hideOverlays() { document.querySelectorAll('.overlay').forEach((o) => o.classList.remove('open')); document.body.style.overflow = ''; }
+    function closeAll(then) {
+      hideOverlays();
+      if (typeof then !== 'function') then = null;
+      if (sheetEntry) { sheetEntry = false; backPending = true; afterClose = then; history.back(); }
+      else if (backPending) { if (then) afterClose = then; }
+      else if (then) then();
+    }
+    window.addEventListener('popstate', () => {
+      sheetEntry = false;
+      hideOverlays();
+      if (backPending) { backPending = false; const f = afterClose; afterClose = null; if (f) f(); }
+    });
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
 
     function ageOk() { store.set('ifrank_age_ok', true); $('age').classList.remove('open'); }
