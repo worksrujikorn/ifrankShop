@@ -147,7 +147,8 @@
 
     /* product sheet */
     .p-top { display: flex; gap: 14px; align-items: center; }
-    .p-emoji { width: 78px; height: 78px; flex-shrink: 0; border-radius: var(--radius); background: color-mix(in srgb, var(--c1) 12%, var(--input)); border: 1px solid color-mix(in srgb, var(--c1) 35%, var(--line)); display: grid; place-items: center; font-size: 38px; }
+    .p-emoji { width: 78px; height: 78px; flex-shrink: 0; border-radius: var(--radius); background: color-mix(in srgb, var(--c1) 12%, var(--input)); border: 1px solid color-mix(in srgb, var(--c1) 35%, var(--line)); display: grid; place-items: center; font-size: 38px; white-space: nowrap; }
+    .p-emoji.duo { font-size: 28px; letter-spacing: -1px; }
     .p-name { font-family: var(--fontd); font-size: 24px; font-weight: 800; line-height: 1.15; }
     .p-type { margin-top: 3px; font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--c1); }
     .p-badges { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
@@ -520,6 +521,7 @@
     const visible = () => DB.products.filter((p) => !p.hidden && catOk(p));
     const available = () => visible().filter((p) => !p.soldOut);
     const first = (e) => { try { return [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(e || '🌿')][0].segment; } catch (_) { return [...(e || '🌿')][0]; } };
+    const graphemes = (e) => { try { return [...new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(e || '🌿')].length; } catch (_) { return [...(e || '🌿')].length; } };
     const cssVars = (p) => { const f = flavor(p.flavor); return `--c1:${f.c1};--c2:${f.c2};--ct:${onColor(f.c1)}`; };
     function toast(msg) {
       const t = $('toast'); t.textContent = msg; t.classList.add('show');
@@ -618,7 +620,7 @@
         <button class="sheet-x" onclick="closeAll()" aria-label="ปิด">✕</button>
         <div class="handle"></div>
         <div class="p-top">
-          <div class="p-emoji">${esc(p.emoji || '🌿')}</div>
+          <div class="p-emoji ${graphemes(p.emoji) > 1 ? 'duo' : ''}">${esc(p.emoji || '🌿')}</div>
           <div style="min-width:0">
             <div class="p-name">${esc(p.name)}</div>
             <div class="p-type">${esc([p.strain, p.lineage].filter(Boolean).join(' · '))}</div>
