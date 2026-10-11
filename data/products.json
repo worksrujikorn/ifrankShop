@@ -16,7 +16,7 @@
       "id": "homegrow",
       "name": "Homegrow",
       "icon": "🌿",
-      "subtitle": "ปลูกเอง ใส่ใจเอง — จากมือเรา ถึงมือคุณ",
+      "subtitle": "ปลูกเอง ใส่ใจเอง — จากมือเรา ถึงมือคุณ · 80 ฿/g",
       "color": "#01f5a0"
     },
     {
@@ -36,16 +36,62 @@
   ],
   "products": [
     {
-      "id": "super-lemon-haze",
-      "name": "Super Lemon Haze",
-      "emoji": "🍋⚡",
+      "id": "vice-city",
+      "name": "Vice City",
+      "emoji": "🌴🌆",
       "category": "homegrow",
-      "strain": "Sativa",
+      "strain": "Hybrid",
       "lineage": "",
       "flavor": "candy",
-      "terp": "sharp lemon zest, haze gas, citrus candy",
-      "effect": "head high พุ่ง creative ชัด โฟกัสดี",
-      "feel": "มะนาวพุ่งแรง — sativa กลางวันที่ดีที่สุด",
+      "terp": "tropical candy, sweet citrus, light gas",
+      "effect": "อารมณ์ดี ลอยเบา ชิลล์",
+      "feel": "ไวบ์ไมอามี่ยามค่ำ — หวานเขตร้อน สนุกทุกคืน",
+      "prices": [
+        {
+          "label": "1g",
+          "price": 80
+        }
+      ],
+      "badges": [
+        "new",
+        "hot"
+      ],
+      "soldOut": false,
+      "hidden": false,
+      "terpenes": [
+        {
+          "key": "limonene",
+          "level": 70
+        },
+        {
+          "key": "ocimene",
+          "level": 55
+        },
+        {
+          "key": "caryophyllene",
+          "level": 40
+        }
+      ],
+      "profile": {
+        "citrus": 3,
+        "floral": 2,
+        "earthy": 1,
+        "gas": 2,
+        "sweet": 4,
+        "berry": 2
+      }
+    },
+    {
+      "id": "orange-juice",
+      "name": "Orange Juice",
+      "emoji": "🍊🧃",
+      "category": "homegrow",
+      "strain": "Sativa-Hybrid",
+      "lineage": "",
+      "flavor": "fruit",
+      "terp": "fresh orange, citrus zest, sweet juice",
+      "effect": "สดชื่น กระปรี้กระเปร่า โฟกัสดี",
+      "feel": "น้ำส้มคั้นสด — sativa กลางวันสดใส",
       "prices": [
         {
           "label": "1g",
@@ -64,191 +110,55 @@
         },
         {
           "key": "terpinolene",
-          "level": 60
+          "level": 50
         },
         {
-          "key": "pinene",
+          "key": "myrcene",
           "level": 40
         }
       ],
       "profile": {
         "citrus": 5,
-        "floral": 1,
+        "floral": 2,
         "earthy": 1,
-        "gas": 3,
-        "sweet": 2,
+        "gas": 1,
+        "sweet": 3,
         "berry": 0
       }
     },
     {
-      "id": "blue-biscotti",
-      "name": "Blue Biscotti",
-      "emoji": "🫐🍪",
+      "id": "cereal-milk",
+      "name": "Cereal Milk",
+      "emoji": "🥣🥛",
       "category": "homegrow",
-      "strain": "Hybrid-Indica",
-      "lineage": "",
-      "flavor": "fruit",
-      "terp": "blueberry candy, creamy cookie, sweet gas",
-      "effect": "ลอยเบา euphoric บาลานซ์ดี",
-      "feel": "บลูเบอร์รี่ครีมคุกกี้ — หวานซ้อนหวานทุกชั้น",
-      "prices": [
-        {
-          "label": "1g",
-          "price": 80
-        }
-      ],
-      "badges": [
-        "new"
-      ],
-      "soldOut": false,
-      "hidden": false,
-      "terpenes": [
-        {
-          "key": "caryophyllene",
-          "level": 80
-        },
-        {
-          "key": "myrcene",
-          "level": 60
-        },
-        {
-          "key": "limonene",
-          "level": 30
-        }
-      ],
-      "profile": {
-        "citrus": 0,
-        "floral": 1,
-        "earthy": 2,
-        "gas": 2,
-        "sweet": 4,
-        "berry": 4
-      }
-    },
-    {
-      "id": "green-crack",
-      "name": "Green Crack",
-      "emoji": "🟢🌿",
-      "category": "homegrow",
-      "strain": "Sativa",
-      "lineage": "",
-      "flavor": "earthy",
-      "terp": "mango citrus, earthy pine, tropical fruit",
-      "effect": "พลังงาน focus ชัด อารมณ์ดีมาก",
-      "feel": "มะม่วงสด สดชื่นแรง — sativa เช้าที่ไม่ต้องการกาแฟ",
-      "prices": [
-        {
-          "label": "1g",
-          "price": 80
-        }
-      ],
-      "badges": [
-        "new"
-      ],
-      "soldOut": false,
-      "hidden": false,
-      "terpenes": [
-        {
-          "key": "myrcene",
-          "level": 70
-        },
-        {
-          "key": "pinene",
-          "level": 60
-        },
-        {
-          "key": "limonene",
-          "level": 50
-        }
-      ],
-      "profile": {
-        "citrus": 4,
-        "floral": 1,
-        "earthy": 3,
-        "gas": 1,
-        "sweet": 2,
-        "berry": 1
-      }
-    },
-    {
-      "id": "jelly-cola",
-      "name": "Jelly Cola",
-      "emoji": "🥤🍬",
-      "category": "premium",
-      "strain": "Hybrid-Sativa",
-      "lineage": "Macmoza x Disco Tiger",
-      "flavor": "candy",
-      "terp": "cola fizz, citrus soda, sweet haze",
-      "effect": "สดชื่น อารมณ์ดี สาย sativa พุ่งสนุก",
-      "feel": "หวานฟู่ซ่าแบบน้ำอัดลม — Sweet Fizzy Stoned",
-      "prices": [
-        {
-          "label": "1g",
-          "price": 150
-        }
-      ],
-      "badges": [
-        "new",
-        "hot"
-      ],
-      "soldOut": false,
-      "hidden": false,
-      "terpenes": [
-        {
-          "key": "limonene",
-          "level": 80
-        },
-        {
-          "key": "ocimene",
-          "level": 50
-        },
-        {
-          "key": "caryophyllene",
-          "level": 40
-        }
-      ],
-      "profile": {
-        "citrus": 4,
-        "floral": 1,
-        "earthy": 1,
-        "gas": 2,
-        "sweet": 5,
-        "berry": 1
-      }
-    },
-    {
-      "id": "manzano",
-      "name": "Manzano",
-      "emoji": "🍓🎂",
-      "category": "premium",
       "strain": "Hybrid",
-      "lineage": "Strawberry & Cream x Banana Cake",
+      "lineage": "",
       "flavor": "cream",
-      "terp": "fresh strawberry, creamy dough, banana sweet",
-      "effect": "ผ่อนคลาย euphoric อารมณ์ดี",
-      "feel": "สตรอว์เบอร์รี่ครีมเค้ก — Baked for a Higher Mood",
+      "terp": "sweet cereal, creamy milk, vanilla cookie",
+      "effect": "ผ่อนคลาย บาลานซ์ดี อารมณ์ดี",
+      "feel": "ซีเรียลนมเย็น — หวานครีมนุ่มทุกคำ",
       "prices": [
         {
           "label": "1g",
-          "price": 150
+          "price": 80
         }
       ],
       "badges": [
-        "pick"
+        "new"
       ],
       "soldOut": false,
       "hidden": false,
       "terpenes": [
         {
-          "key": "myrcene",
+          "key": "caryophyllene",
           "level": 70
+        },
+        {
+          "key": "limonene",
+          "level": 50
         },
         {
           "key": "linalool",
-          "level": 60
-        },
-        {
-          "key": "caryophyllene",
           "level": 40
         }
       ],
@@ -258,29 +168,28 @@
         "earthy": 1,
         "gas": 1,
         "sweet": 5,
-        "berry": 5
+        "berry": 1
       }
     },
     {
-      "id": "boujee-bitch",
-      "name": "Boujee Bitch",
-      "emoji": "🍒💅",
-      "category": "premium",
-      "strain": "Hybrid",
-      "lineage": "Trop Cherry x Wedding Cake",
-      "flavor": "berry",
-      "terp": "tropical cherry, gassy earthy, wedding cake cream",
-      "effect": "party vibes ดี อารมณ์ขึ้น body สบาย",
-      "feel": "เชอร์รี่ tropical เข้มข้น — Good Weed, Higher Standards",
+      "id": "death-of-boof",
+      "name": "Death of Boof",
+      "emoji": "💀💨",
+      "category": "homegrow",
+      "strain": "Indica-Hybrid",
+      "lineage": "",
+      "flavor": "gas",
+      "terp": "heavy gas, earthy funk, dark berry",
+      "effect": "body heavy ผ่อนคลายลึก",
+      "feel": "gas หนักแน่น funk เข้ม — สายปิดคืน",
       "prices": [
         {
           "label": "1g",
-          "price": 150
+          "price": 80
         }
       ],
       "badges": [
-        "new",
-        "hot"
+        "new"
       ],
       "soldOut": false,
       "hidden": false,
@@ -290,66 +199,66 @@
           "level": 85
         },
         {
-          "key": "limonene",
-          "level": 60
+          "key": "myrcene",
+          "level": 70
         },
         {
-          "key": "myrcene",
-          "level": 50
+          "key": "humulene",
+          "level": 40
         }
       ],
       "profile": {
-        "citrus": 1,
+        "citrus": 0,
         "floral": 1,
-        "earthy": 3,
-        "gas": 4,
-        "sweet": 3,
-        "berry": 4
+        "earthy": 4,
+        "gas": 5,
+        "sweet": 1,
+        "berry": 2
       }
     },
     {
-      "id": "lime-soda",
-      "name": "Lime Soda",
-      "emoji": "🍋🫧",
-      "category": "premium",
+      "id": "lemon-cherry",
+      "name": "Lemon Cherry",
+      "emoji": "🍋🍒",
+      "category": "homegrow",
       "strain": "Hybrid",
-      "lineage": "Macmosa x Disco Tiger #2",
-      "flavor": "fruit",
-      "terp": "fresh lime, lemon soda, citrus haze",
-      "effect": "สดชื่น โฟกัส creative สาย haze",
-      "feel": "มะนาวโซดาพุ่ง สดฉ่ำ — Citrus Bubbles, Higher Realities",
+      "lineage": "",
+      "flavor": "berry",
+      "terp": "sour lemon, sweet cherry, candy gas",
+      "effect": "euphoric อารมณ์ขึ้น ลอยเบา",
+      "feel": "เชอร์รี่ตัดมะนาวเปรี้ยวหวาน — กลิ่นติดมือ",
       "prices": [
         {
           "label": "1g",
-          "price": 150
+          "price": 80
         }
       ],
       "badges": [
-        "best"
+        "new"
       ],
       "soldOut": false,
       "hidden": false,
       "terpenes": [
         {
           "key": "limonene",
-          "level": 95
+          "level": 80
         },
         {
-          "key": "terpinolene",
+          "key": "caryophyllene",
           "level": 50
         },
         {
-          "key": "ocimene",
-          "level": 40
+          "key": "linalool",
+          "level": 35
         }
       ],
       "profile": {
-        "citrus": 5,
-        "floral": 2,
+        "citrus": 4,
+        "floral": 1,
         "earthy": 1,
-        "gas": 1,
-        "sweet": 3,
-        "berry": 0
+        "gas": 2,
+        "sweet": 4,
+        "berry": 4
       }
     },
     {
