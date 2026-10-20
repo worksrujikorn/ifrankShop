@@ -1,5 +1,8 @@
 {
   "cleanUrls": true,
+  "crons": [
+    { "path": "/api/southpaw-remind", "schedule": "0 23 * * *" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
