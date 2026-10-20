@@ -1,24 +1,25 @@
-// Vercel serverless function: stores Southpaw training data (one record per week) in Upstash Redis.
+// Vercel serverless function: stores Southpaw training data (one document per week) in MongoDB Atlas.
 // Env vars needed in Vercel:
-//   KV_REST_API_URL + KV_REST_API_TOKEN   (added automatically when you connect Upstash Redis / Vercel KV)
-//   SOUTHPAW_KEY                          (your own password; every device sends it in x-southpaw-key)
+//   MONGODB_URI     (added automatically when you connect MongoDB Atlas to the project)
+//   MONGODB_DB      (optional, database name; default "southpaw")
+//   SOUTHPAW_KEY    (your own password; every device sends it in x-southpaw-key)
 import { timingSafeEqual } from 'node:crypto';
+import { MongoClient } from 'mongodb';
+import { attachDatabasePool } from '@vercel/functions';
 
-const URL_ = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const URI = process.env.MONGODB_URI || '';
+const DB_NAME = process.env.MONGODB_DB || 'southpaw';
 const SECRET = process.env.SOUTHPAW_KEY || '';
 const WEEK_RE = /^\d{4}-\d{2}-\d{2}$/;
-const PREFIX = 'southpaw:';
 
-async function redis(cmd) {
-  const r = await fetch(URL_, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(cmd),
-  });
-  const j = await r.json();
-  if (!r.ok || j.error) throw new Error(j.error || `redis ${r.status}`);
-  return j.result;
+// One client per function instance; attachDatabasePool lets Vercel close idle connections cleanly.
+let client = null;
+function weeks() {
+  if (!client) {
+    client = new MongoClient(URI, { maxIdleTimeMS: 5000 });
+    attachDatabasePool(client);
+  }
+  return client.db(DB_NAME).collection('weeks');
 }
 
 function authorized(req) {
@@ -29,19 +30,14 @@ function authorized(req) {
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
-  if (!URL_ || !TOKEN || !SECRET) return res.status(500).json({ error: 'server not configured' });
+  if (!URI || !SECRET) return res.status(500).json({ error: 'server not configured' });
   if (!authorized(req)) return res.status(401).json({ error: 'unauthorized' });
 
   try {
     // GET /api/southpaw?list=1  → every saved week, newest first (max 52)
     if (req.method === 'GET' && req.query.list) {
-      const weeks = ((await redis(['SMEMBERS', PREFIX + 'weeks'])) || [])
-        .filter((w) => WEEK_RE.test(w)).sort().reverse().slice(0, 52);
-      if (!weeks.length) return res.status(200).json({ weeks: [] });
-      const vals = await redis(['MGET', ...weeks.map((w) => PREFIX + 'week:' + w)]);
-      return res.status(200).json({
-        weeks: weeks.map((w, i) => ({ week: w, data: vals[i] ? JSON.parse(vals[i]) : null })),
-      });
+      const docs = await weeks().find({}, { projection: { data: 1 } }).sort({ _id: -1 }).limit(52).toArray();
+      return res.status(200).json({ weeks: docs.map((d) => ({ week: d._id, data: d.data || null })) });
     }
 
     const week = String(req.query.week || '');
@@ -49,8 +45,8 @@ export default async function handler(req, res) {
 
     // GET /api/southpaw?week=2026-10-19
     if (req.method === 'GET') {
-      const v = await redis(['GET', PREFIX + 'week:' + week]);
-      return res.status(200).json({ data: v ? JSON.parse(v) : null });
+      const doc = await weeks().findOne({ _id: week });
+      return res.status(200).json({ data: doc ? doc.data : null });
     }
 
     // PUT /api/southpaw?week=2026-10-19   body: { data: {...} }
@@ -59,16 +55,15 @@ export default async function handler(req, res) {
       if (typeof body === 'string') body = JSON.parse(body || '{}');
       const data = body && body.data;
       if (!data || typeof data !== 'object' || Array.isArray(data)) return res.status(400).json({ error: 'bad body' });
-      const json = JSON.stringify(data);
-      if (json.length > 50000) return res.status(413).json({ error: 'too large' });
-      await redis(['SET', PREFIX + 'week:' + week, json]);
-      await redis(['SADD', PREFIX + 'weeks', week]);
+      if (JSON.stringify(data).length > 50000) return res.status(413).json({ error: 'too large' });
+      await weeks().replaceOne({ _id: week }, { data, savedAt: new Date() }, { upsert: true });
       return res.status(200).json({ ok: true });
     }
 
     res.setHeader('Allow', 'GET, PUT');
     return res.status(405).json({ error: 'method not allowed' });
   } catch (e) {
+    console.error('southpaw storage error', e);
     return res.status(502).json({ error: 'storage error' });
   }
 }
