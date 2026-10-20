@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FF5A2A">
+<meta name="description" content="ตารางซ้อมมวยและเวทรายสัปดาห์ แยกเช้า/เย็น ติ๊กทีละเซต พร้อมตัวจับเวลา">
+<link rel="icon" href="/southpaw/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/southpaw/icon.svg">
+<link rel="manifest" href="/southpaw/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Southpaw">
+<title>ตารางซ้อม Southpaw</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:ital,wght@0,500;0,700;1,700;1,800;1,900&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: fight-camp hero with today's plan + week ring → day tabs → one day at a time (AM / PM slots, tappable set dots) → built-in round/rest timer dock */
+:root{
+  --bg:#F3F5FA; --surface:#FFFFFF; --ink:#131925; --muted:#5D6678; --line:#E1E5EE;
+  --fire1:#FF2A3D; --fire2:#FF7A00; --volt:#FFD60A; --volt-ink:#1A1200;
+  --red:#EF2433; --red-soft:#FFE5E7;
+  --blue:#1F62F0; --blue-soft:#E3ECFF;
+  --orange:#F06A00; --orange-soft:#FFEBD9;
+  --green:#10A458; --green-soft:#DEF5E8;
+  --grey:#778093; --grey-soft:#ECEEF3;
+  --pink:#FF2A6D; --sun:#FFC400;
+  --glow1:#FFE1C2; --glow2:#D8E6FF; --glow3:#FFD9E6;
+  --display:"Kanit","IBM Plex Sans Thai",system-ui,sans-serif;
+  --body:"IBM Plex Sans Thai",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0C0F17; --surface:#151A25; --ink:#EEF1F7; --muted:#9AA3B4; --line:#262E3E;
+  --red:#FF4C58; --red-soft:#3B161B; --blue:#5E8FFF; --blue-soft:#162340;
+  --orange:#FF8C2E; --orange-soft:#3A2412; --green:#2CD47D; --green-soft:#10301F;
+  --grey:#8E97A8; --grey-soft:#1E2432; --glow1:#3A1E0E; --glow2:#14224A; --glow3:#3A1027; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C0F17; --surface:#151A25; --ink:#EEF1F7; --muted:#9AA3B4; --line:#262E3E;
+  --red:#FF4C58; --red-soft:#3B161B; --blue:#5E8FFF; --blue-soft:#162340;
+  --orange:#FF8C2E; --orange-soft:#3A2412; --green:#2CD47D; --green-soft:#10301F;
+  --grey:#8E97A8; --grey-soft:#1E2432; --glow1:#3A1E0E; --glow2:#14224A; --glow3:#3A1027; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background-color:var(--bg);
+  background-image:radial-gradient(ellipse at 0% 0%,var(--glow1) 0,transparent 45%),radial-gradient(ellipse at 100% 20%,var(--glow2) 0,transparent 45%),radial-gradient(ellipse at 30% 100%,var(--glow3) 0,transparent 50%);
+  background-attachment:fixed;color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 120px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.1}
+button{font:inherit;color:inherit}
+button:focus-visible,summary:focus-visible{outline:3px solid var(--volt);outline-offset:2px}
+
+/* ---------- HERO ---------- */
+.hero{position:relative;overflow:hidden;border-radius:22px;color:#fff;padding:22px 20px 20px;
+  background:linear-gradient(125deg,var(--pink) 0%,var(--fire2) 55%,var(--sun) 100%);box-shadow:0 14px 34px -14px rgba(255,80,40,.6)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(-60deg,rgba(255,255,255,.08) 0 14px,transparent 14px 34px)}
+.hero::after{content:"";position:absolute;right:-60px;bottom:-80px;width:260px;height:260px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,214,10,.5),transparent 68%)}
+.hero > *{position:relative}
+.hero-top{display:flex;justify-content:space-between;gap:16px;align-items:center}
+.kicker{display:inline-block;font-family:var(--display);font-style:italic;font-weight:800;font-size:12px;letter-spacing:.14em;
+  background:var(--volt);color:var(--volt-ink);padding:3px 10px;border-radius:6px;transform:skewX(-8deg)}
+.hero h1{font-size:clamp(30px,7.5vw,50px);font-weight:900;font-style:italic;margin-top:8px;text-shadow:0 3px 0 rgba(0,0,0,.14)}
+.ring{flex:none;width:96px;height:96px;position:relative}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:9}
+.ring .trk{stroke:rgba(255,255,255,.25)}
+.ring .val{stroke:var(--volt);stroke-linecap:round;transition:stroke-dashoffset .6s ease;filter:drop-shadow(0 0 6px rgba(255,214,10,.7))}
+.ring-txt{position:absolute;inset:0;display:grid;place-content:center;text-align:center;line-height:1}
+.ring-txt b{font-family:var(--display);font-style:italic;font-weight:900;font-size:26px;font-variant-numeric:tabular-nums}
+.ring-txt span{font-size:11px;opacity:.9;margin-top:3px}
+.today-box{margin-top:16px;background:rgba(0,0,0,.2);border-radius:16px;padding:12px 14px;display:grid;gap:8px}
+.today-box .lbl{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;opacity:.85}
+.today-slots{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tslot{background:rgba(255,255,255,.14);border-radius:12px;padding:8px 10px;min-width:0}
+.tslot small{display:block;font-size:12px;opacity:.85}
+.tslot b{font-family:var(--display);font-style:italic;font-weight:800;font-size:17px}
+.cheer{font-size:14px;font-weight:600}
+
+/* ---------- DAY TABS ---------- */
+.tabs{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.tab{position:relative;border:0;cursor:pointer;border-radius:14px;padding:9px 2px 8px;background:var(--surface);
+  box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform .15s}
+.tab:hover{transform:translateY(-2px)}
+.tab b{font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;line-height:1}
+.tab .pips{display:flex;gap:3px}
+.tab .pips i{width:8px;height:8px;border-radius:50%}
+.tab.is-today::before{content:"วันนี้";position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;
+  background:var(--volt);color:var(--volt-ink);padding:0 6px;border-radius:6px;white-space:nowrap}
+.tt-str{background:var(--blue-soft);color:var(--blue)} .tt-box{background:var(--red-soft);color:var(--red)}
+.tt-cardio{background:var(--green-soft);color:var(--green)} .tt-rest{background:var(--grey-soft);color:var(--grey)}
+.tab{box-shadow:none}
+.tab[aria-selected="true"]{color:#fff;transform:translateY(-3px) scale(1.04);box-shadow:0 8px 18px -8px rgba(0,0,0,.35)}
+.tab[aria-selected="true"].tt-str{background:linear-gradient(135deg,var(--blue),#7A4DFF)}
+.tab[aria-selected="true"].tt-box{background:linear-gradient(135deg,var(--pink),var(--fire2))}
+.tab[aria-selected="true"].tt-cardio{background:linear-gradient(135deg,var(--green),#12C2B0)}
+.tab[aria-selected="true"].tt-rest{background:var(--grey)}
+.tab[aria-selected="true"] .pips i{box-shadow:0 0 0 2px #fff}
+.tab.done::after{content:"✓";position:absolute;top:2px;right:5px;font-size:12px;font-weight:800;color:var(--green)}
+.tab[aria-selected="true"].done::after{color:var(--volt)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:5px;background:var(--surface);padding:3px 10px;border-radius:999px}
+.legend i{width:9px;height:9px;border-radius:50%}
+.c-str{background:var(--blue)} .c-box{background:var(--red)} .c-rope{background:var(--orange)} .c-cardio{background:var(--green)} .c-rest{background:var(--grey)}
+
+/* ---------- DAY VIEW ---------- */
+.dayhead{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.dayhead h2{font-size:clamp(32px,7vw,44px);font-weight:900;font-style:italic;padding-right:4px;
+  background:linear-gradient(100deg,var(--pink),var(--fire2) 60%,var(--sun));-webkit-background-clip:text;background-clip:text;color:transparent}
+.motto{font-family:var(--display);font-style:italic;font-weight:700;color:var(--ink);font-size:17px;margin:2px 0 0}
+.daypct{font-family:var(--mono);font-weight:600;font-size:13px;color:#fff;background:linear-gradient(110deg,var(--pink),var(--fire2));padding:4px 12px;border-radius:999px}
+
+.slot{background:var(--surface);border-radius:22px;overflow:hidden;box-shadow:0 1px 0 var(--line),0 14px 30px -18px rgba(20,25,37,.35)}
+.t-str .slot-body{background:linear-gradient(180deg,var(--blue-soft),var(--surface) 160px)}
+.t-box .slot-body{background:linear-gradient(180deg,var(--red-soft),var(--surface) 160px)}
+.t-rope .slot-body{background:linear-gradient(180deg,var(--orange-soft),var(--surface) 160px)}
+.t-cardio .slot-body{background:linear-gradient(180deg,var(--green-soft),var(--surface) 160px)}
+.t-opt .slot-body{background:linear-gradient(180deg,var(--grey-soft),var(--surface) 160px)}
+.slot-band{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 16px;color:#fff}
+.t-str .slot-band{background:linear-gradient(110deg,var(--blue),#7A4DFF)}
+.t-box .slot-band{background:linear-gradient(110deg,var(--pink),var(--fire2))}
+.t-rope .slot-band{background:linear-gradient(110deg,var(--orange),var(--sun))}
+.t-cardio .slot-band{background:linear-gradient(110deg,var(--green),#12C2B0)}
+.t-rest .slot-band,.t-opt .slot-band{background:var(--grey)}
+.slot-band h3{font-size:20px;font-weight:800;font-style:italic;display:flex;align-items:center;gap:8px}
+.slot-band h3 small{font-family:var(--body);font-style:normal;font-weight:500;font-size:13px;opacity:.9;
+  background:rgba(255,255,255,.2);padding:1px 8px;border-radius:999px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap;background:rgba(255,255,255,.22)}
+.chip.mono{font-family:var(--mono);font-weight:500}
+.chip.new{background:var(--volt);color:var(--volt-ink)}
+.slot-body{padding:6px 16px 14px;display:flex;flex-direction:column;gap:10px}
+.slot-note{margin:8px 0 0;font-size:13.5px;color:var(--muted)}
+.part{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 0 -4px}
+
+.group{display:grid;grid-template-columns:32px 1fr;gap:0 10px}
+.gtag{font-family:var(--display);font-style:italic;font-weight:900;font-size:20px;line-height:1;padding-top:10px}
+.t-str .gtag{color:var(--blue)} .t-box .gtag{color:var(--red)} .t-rope .gtag{color:var(--orange)} .t-cardio .gtag{color:var(--green)} .t-opt .gtag{color:var(--grey)}
+.rows{min-width:0;display:flex;flex-direction:column}
+.row{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:9px 0;border-bottom:1px dashed var(--line);align-items:center}
+.row:last-child{border-bottom:0}
+.name{font-weight:500}
+.reps{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.t-str .reps{color:var(--blue)} .t-box .reps{color:var(--red)} .t-rope .reps{color:var(--orange)} .t-cardio .reps{color:var(--green)}
+.note{grid-column:1/-1;font-size:13px;color:var(--muted);margin-top:-2px}
+.dots{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.dot.pop{animation:pop .35s ease}
+@keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+.confetti{position:fixed;top:-12px;width:10px;height:14px;border-radius:3px;z-index:30;pointer-events:none;animation:fall 1.6s ease-in forwards}
+@keyframes fall{to{transform:translate(var(--dx),105vh) rotate(var(--rot));opacity:.9}}
+.dot{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);background:var(--surface);cursor:pointer;
+  font-family:var(--mono);font-size:12px;font-weight:600;color:var(--muted);display:grid;place-items:center;transition:transform .12s,background .2s}
+.dot:active{transform:scale(.9)}
+.dot[aria-pressed="true"]{border-color:transparent;color:#fff}
+.t-str .dot[aria-pressed="true"]{background:var(--blue)} .t-box .dot[aria-pressed="true"]{background:var(--red)}
+.t-rope .dot[aria-pressed="true"]{background:var(--orange)} .t-cardio .dot[aria-pressed="true"]{background:var(--green)}
+.t-opt .dot[aria-pressed="true"]{background:var(--grey)}
+.restbtn{align-self:flex-start;margin-top:6px;border:0;cursor:pointer;font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;display:inline-flex;gap:6px;align-items:center}
+.t-str .restbtn{background:var(--blue-soft);color:var(--blue)} .t-box .restbtn{background:var(--red-soft);color:var(--red)}
+.t-rope .restbtn{background:var(--orange-soft);color:var(--orange)} .t-opt .restbtn{background:var(--grey-soft);color:var(--grey)}
+.restbtn:hover{filter:brightness(.96)}
+.bigbtn{border:0;cursor:pointer;width:100%;padding:12px;border-radius:14px;font-family:var(--display);font-style:italic;font-weight:800;font-size:17px;
+  color:#fff;background:linear-gradient(110deg,var(--fire1),var(--fire2));box-shadow:0 6px 18px -8px rgba(239,36,51,.7)}
+.plant{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--green);font-weight:600;padding:8px 12px;border-radius:12px;background:var(--green-soft)}
+
+.donebtn{width:100%;padding:14px;border-radius:16px;cursor:pointer;font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;
+  border:2px dashed var(--line);background:transparent;color:var(--muted);transition:all .2s}
+.donebtn:hover{border-color:var(--red);color:var(--red)}
+.donebtn[aria-pressed="true"]{border:2px solid transparent;color:#fff;background:linear-gradient(110deg,var(--pink),var(--fire2) 60%,var(--sun));box-shadow:0 10px 24px -10px rgba(255,80,40,.7)}
+.restday{background:var(--surface);border-radius:20px;padding:28px 18px;text-align:center;box-shadow:0 1px 0 var(--line)}
+.restday b{display:block;font-family:var(--display);font-style:italic;font-weight:900;font-size:28px}
+.restday p{margin:6px 0 0;color:var(--muted)}
+
+/* ---------- INFO ---------- */
+details.info{background:var(--surface);border-radius:18px;box-shadow:0 1px 0 var(--line)}
+details.info summary{cursor:pointer;list-style:none;padding:14px 18px;font-family:var(--display);font-style:italic;font-weight:800;font-size:18px;
+  display:flex;justify-content:space-between;align-items:center}
+details.info summary::-webkit-details-marker{display:none}
+details.info summary::after{content:"+";font-style:normal;color:var(--red);font-size:22px;line-height:1}
+details.info[open] summary::after{content:"–"}
+.info-body{padding:0 18px 16px}
+.info-body ul{margin:0;padding-left:18px;display:grid;gap:5px}
+.combo{display:grid;gap:8px}
+.combo div{display:grid;grid-template-columns:76px 1fr;gap:10px;align-items:center}
+.combo code{font-family:var(--mono);font-weight:600;color:#fff;background:var(--red);padding:2px 8px;border-radius:6px;text-align:center}
+.info-body dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px}
+.info-body dt{font-family:var(--mono);font-weight:600;white-space:nowrap;color:var(--red)}
+.info-body dd{margin:0}
+.foot{text-align:center;font-family:var(--display);font-style:italic;font-weight:800;font-size:20px;color:var(--red);margin:4px 0 0}
+
+/* ---------- TIMER DOCK ---------- */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:20;
+  padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:var(--ink);color:var(--bg);box-shadow:0 -10px 30px -10px rgba(0,0,0,.4)}
+.dock-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:14px}
+.dock .phase{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.75}
+.dock .clock{font-family:var(--mono);font-weight:600;font-size:38px;line-height:1;font-variant-numeric:tabular-nums}
+.dock.work .clock{color:var(--volt)}
+.dock .meta{flex:1;min-width:0}
+.dock .sub{font-size:13px;opacity:.8}
+.dock button{border:0;cursor:pointer;border-radius:12px;padding:10px 14px;font-weight:700;background:rgba(255,255,255,.14);color:inherit}
+.dock .pbar{position:absolute;left:0;top:0;height:3px;background:var(--volt);width:0;transition:width 1s linear}
+.quick{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--muted)}
+.quick button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;cursor:pointer;font-weight:600;font-family:var(--mono);font-size:12.5px}
+.quick button:hover{border-color:var(--red);color:var(--red)}
+
+/* ---------- SYNC + LOG ---------- */
+.hero-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.sync{border:0;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:4px 11px;border-radius:999px;background:rgba(255,255,255,.22);color:#fff}
+.sync i{width:8px;height:8px;border-radius:50%;background:#fff;opacity:.6}
+.sync[data-state="ok"] i{background:#7CFFB2;opacity:1}
+.sync[data-state="busy"] i{background:var(--volt);opacity:1;animation:blink 1s infinite}
+.sync[data-state="err"] i,.sync[data-state="offline"] i{background:#FFD0D0;opacity:1}
+@keyframes blink{50%{opacity:.3}}
+.card.log{background:var(--surface);border-radius:18px;padding:14px 18px;box-shadow:0 1px 0 var(--line)}
+.log-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.log-row label{font-family:var(--display);font-style:italic;font-weight:800;font-size:17px}
+.bw{display:flex;align-items:center;gap:6px;font-weight:600}
+.bw input{width:100px;padding:8px 10px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:16px;font-weight:600;text-align:right}
+.bw input:focus,.notebox textarea:focus,.sync-set input:focus{outline:none;border-color:var(--fire2)}
+.notebox{display:grid;gap:6px}
+.notebox label{font-weight:600;font-size:14px}
+.notebox textarea{width:100%;resize:vertical;padding:10px 12px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:16px}
+.sync-set p{margin:0 0 10px;color:var(--muted);font-size:14px}
+.sync-set form{display:flex;gap:8px;flex-wrap:wrap}
+.sync-set input{flex:1;min-width:0;padding:10px 12px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font-size:16px}
+.sync-set button{border:0;cursor:pointer;padding:10px 18px;border-radius:12px;font-weight:700;color:#fff;background:linear-gradient(110deg,var(--pink),var(--fire2))}
+.sync-set .sync-msg{margin:10px 0 0;font-weight:600;color:var(--ink)}
+.muted{color:var(--muted);margin:0}
+.hist{display:grid;gap:10px}
+.hrow{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr auto auto;gap:10px;align-items:center;font-size:14px}
+.hrow.cur .hw{font-weight:700}
+.hw em{font-style:normal;font-size:11px;font-weight:700;background:var(--volt);color:var(--volt-ink);padding:0 6px;border-radius:6px;margin-left:4px;white-space:nowrap}
+.hbar{height:10px;border-radius:999px;background:var(--grey-soft);overflow:hidden}
+.hbar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--pink),var(--fire2),var(--sun))}
+.hn,.hbw{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hbw{color:var(--muted);min-width:62px;text-align:right}
+
+@media (max-width:460px){
+  .hrow{grid-template-columns:minmax(0,1fr) auto auto}
+  .hbar{grid-column:1/-1;order:5}
+  .tab .pips i{width:7px;height:7px}
+  .today-slots{grid-template-columns:1fr}
+  .info-body dl{grid-template-columns:1fr} .info-body dd{margin-bottom:6px}
+  .ring{width:80px;height:80px} .ring-txt b{font-size:22px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0} img{max-width:100%} [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div class="hero-top">
+      <div>
+        <span class="kicker">SOUTHPAW · FIGHT CAMP</span>
+        <h1>ตารางซ้อม Southpaw</h1>
+      </div>
+      <div class="ring" aria-label="ความคืบหน้าสัปดาห์นี้">
+        <svg viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="42"/><circle class="val" id="ringVal" cx="50" cy="50" r="42" stroke-dasharray="263.9" stroke-dashoffset="263.9"/></svg>
+        <div class="ring-txt"><b id="ringNum">0/6</b><span>วันที่ซ้อม</span></div>
+      </div>
+    </div>
+    <div class="today-box" aria-live="polite">
+      <span class="lbl" id="todayLbl">วันนี้</span>
+      <div class="today-slots" id="todaySlots"></div>
+      <div class="hero-foot">
+        <span class="cheer" id="cheer"></span>
+        <button type="button" class="sync" id="syncBtn" data-state="off"><i></i><span id="syncTxt">บันทึกในเครื่องนี้</span></button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="เลือกวัน" id="tabs"></nav>
+  <div class="legend">
+    <span><i class="c-rope"></i>เชือก</span><span><i class="c-str"></i>เวท</span><span><i class="c-box"></i>มวย</span>
+    <span><i class="c-cardio"></i>วิ่ง</span><span><i class="c-rest"></i>พัก / ไม่บังคับ</span>
+  </div>
+
+  <section id="view" class="wrap" style="gap:14px"></section>
+
+  <div class="quick" aria-label="จับเวลาพัก">
+    <span>จับเวลาพักเร็ว:</span>
+    <button type="button" data-rest="45">0:45</button>
+    <button type="button" data-rest="60">1:00</button>
+    <button type="button" data-rest="90">1:30</button>
+  </div>
+
+  <section class="card log">
+    <div class="log-row">
+      <label for="bwInput">⚖️ น้ำหนักตัวสัปดาห์นี้</label>
+      <div class="bw"><input id="bwInput" type="number" inputmode="decimal" step="0.1" min="30" max="150" placeholder="57.0"><span>kg</span></div>
+    </div>
+  </section>
+
+  <details class="info" id="histBox">
+    <summary>ประวัติย้อนหลัง</summary>
+    <div class="info-body" id="histBody"><p class="muted">กดเปิดเพื่อโหลด</p></div>
+  </details>
+
+  <details class="info" id="syncBox">
+    <summary>ตั้งค่าซิงก์ข้ามเครื่อง</summary>
+    <div class="info-body sync-set">
+      <p>ใส่รหัสเดียวกับ <b>SOUTHPAW_KEY</b> ที่ตั้งไว้ใน Vercel ใส่ครั้งเดียวต่อเครื่อง แล้วมือถือกับคอมจะเห็นข้อมูลเดียวกัน</p>
+      <form id="syncForm">
+        <input id="syncKey" type="password" autocomplete="current-password" placeholder="รหัสซิงก์" aria-label="รหัสซิงก์">
+        <button type="submit">บันทึก</button>
+      </form>
+      <p class="sync-msg" id="syncMsg"></p>
+    </div>
+  </details>
+
+  <details class="info">
+    <summary>รอบนี้เปลี่ยนอะไร</summary>
+    <div class="info-body"><ul>
+      <li><b>ไม่ได้ WFH แล้ว</b> มวยวันพุธกับ Full Body วันศุกร์ย้ายไปตอนเย็น ใช้เวลา 30–35 นาที</li>
+      <li><b>เช้าวันเชือก (จ · พ · ศ)</b> เหลือแค่เชือก 15 นาที</li>
+      <li><b>เช้าวันไม่มีเชือก (อ · พฤ)</b> ใช้เล่นเวท หลังกับไหล่ย้ายมาตอนเช้า เย็นว่างหรือ Shadow เบาๆ</li>
+      <li><b>ตัดเชือกออกจากมวยพุธและ circuit ศุกร์</b> เพราะเช้าวันนั้นกระโดดไปแล้ว</li>
+      <li><b>Jump Squat ศุกร์ → Goblet Squat</b> ลดแรงกระแทกก่อนวิ่งวันเสาร์</li>
+    </ul></div>
+  </details>
+
+  <details class="info">
+    <summary>Combo Southpaw</summary>
+    <div class="info-body combo">
+      <div><code>J-C</code><span>ขวา – ซ้าย</span></div>
+      <div><code>J-C-H</code><span>ขวา – ซ้าย – hook ขวา</span></div>
+      <div><code>Body-H</code><span>body ซ้าย + hook ขวา</span></div>
+    </div>
+  </details>
+
+  <details class="info">
+    <summary>ขยับความหนักยังไง</summary>
+    <div class="info-body"><dl>
+      <dt>สัปดาห์ 1–2</dt><dd>ทำ rep ต่ำสุดของช่วง</dd>
+      <dt>สัปดาห์ 3–4</dt><dd>ดันให้ถึง rep สูงสุด</dd>
+      <dt>ครบทุกเซต</dt><dd>เพิ่ม +1–2 kg แล้วกลับไป rep ต่ำสุด</dd>
+      <dt>ทุก 4 สัปดาห์</dt><dd>Deload ลดปริมาณ 40%</dd>
+      <dt>กระสอบทราย</dt><dd>4 → 5 → 6 ยก ทุก 3 สัปดาห์</dd>
+      <dt>เชือก</dt><dd>ถ้าเช้าไหนน่องตึงหรือหน้าแข้งเจ็บ ลดเหลือ 1000 รอบ</dd>
+    </dl></div>
+  </details>
+
+  <p class="foot">ซ้อมหนักวันนี้ ชกง่ายบนเวที 🥊</p>
+</div>
+
+<div class="dock" id="dock" hidden>
+  <i class="pbar" id="pbar"></i>
+  <div class="dock-in">
+    <div class="clock" id="clock">0:00</div>
+    <div class="meta"><div class="phase" id="phase">พัก</div><div class="sub" id="dsub"></div></div>
+    <button type="button" id="dockStop">หยุด</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ---------- DATA ---------- */
+  var ROPE = {type:'rope', title:'เชือก', time:'15 นาที', groups:[
+    {tag:'🪢', items:[{n:'กระโดดเชือก', r:'1500 รอบ', s:1, note:'2 นาทีสุดท้ายกระโดดเร็ว'}]}
+  ]};
+  var SHADOW_OPT = {type:'opt', opt:true, title:'Shadow เบาๆ', time:'10 นาที', badge:'ไม่บังคับ', groups:[
+    {tag:'⚡', items:[
+      {n:'Shadow เน้นสเต็ปเท้า', r:'1 × 3 นาที', s:1, note:'เข้า-ออก วนซ้าย-ขวา ไม่หยุดเท้า'},
+      {n:'Shadow + ป้องกัน', r:'2 × 2 นาที', s:2, note:'slip ซ้าย-ขวา หรือ roll ใต้หมัด แล้วตอบ combo'}
+    ]}
+  ]};
+  var DAYS = [
+    {d:0, s:'อา', name:'อาทิตย์', motto:'พักให้สุด พรุ่งนี้ลุยใหม่', rest:true, pips:['rest']},
+    {d:1, s:'จ', name:'จันทร์', motto:'ขาแน่น หมัดหนัก', pips:['rope','str'],
+      am:ROPE,
+      pm:{type:'str', title:'ขา + อก', time:'35 นาที', groups:[
+        {tag:'A', rest:60, items:[{n:'Squat 12 kg', r:'8–10', s:3, note:'ลงช้า 3 วิ'},{n:'Incline DB Press 8–10 kg', r:'10–12', s:3}]},
+        {tag:'B', rest:60, items:[{n:'Lunges 6 kg', r:'10/ข้าง', s:3},{n:'Explosive Push-up', r:'6–8', s:3}]},
+        {tag:'C', rest:30, items:[{n:'Jump Squat + Push-up', r:'8+8', s:3, note:'Finisher เทให้หมด'}]}
+      ]}},
+    {d:2, s:'อ', name:'อังคาร', motto:'หลังแข็ง ดึงมือกลับไว', pips:['str','rest'],
+      am:{type:'str', title:'หลัง', time:'25–30 นาที', badge:'ย้ายมาเช้า', groups:[
+        {tag:'A', rest:60, items:[{n:'Pull-up', r:'8–12', s:4, note:'ลงช้า 3 วิ'},{n:'Inverted Row', r:'12–15', s:4}]},
+        {tag:'B', rest:45, items:[{n:'DB Row 8–10 kg', r:'12', s:3},{n:'Woodchop 5 kg', r:'12/ข้าง', s:3}]},
+        {tag:'C', items:[{n:'Russian Twist 5 kg', r:'20', s:3}]}
+      ]},
+      pm:SHADOW_OPT},
+    {d:3, s:'พ', name:'พุธ', motto:'วันของนักมวย ใส่นวมแล้วจัดเต็ม', pips:['rope','box'],
+      am:ROPE,
+      pm:{type:'box', title:'มวย · กระสอบ', time:'30–35 นาที', rounds:true, groups:[
+        {part:'Warm-up', tag:'⚡', items:[{n:'หมุนแขน หมุนสะโพก + Shadow', r:'3 นาที', s:1}]},
+        {part:'กระสอบทราย · ยกละ 3 นาที พัก 1 นาที', tag:'R', items:[
+          {n:'R1 · J-C เร็ว', r:'3:00', s:1},{n:'R2 · J-C-H', r:'3:00', s:1},
+          {n:'R3 · Body ซ้าย + Hook ขวา', r:'3:00', s:1},
+          {n:'R4 · Free combo', r:'3:00', s:1, note:'เท้าห้ามหยุด · 30 วิสุดท้ายเร่งสุด'}]},
+        {part:'Finisher', tag:'🔥', items:[{n:'Russian Twist', r:'20', s:3},{n:'Plank', r:'45 วิ', s:3}]}
+      ]}},
+    {d:4, s:'พฤ', name:'พฤหัส', motto:'ไหล่อึด ยกการ์ดได้ทั้งยก', pips:['str','rest'],
+      am:{type:'str', title:'ไหล่ + Core', time:'25 นาที', badge:'ย้ายมาเช้า', groups:[
+        {tag:'A', rest:60, items:[{n:'Shoulder Press 6–8 kg', r:'8–10', s:4},{n:'Lateral Raise 3–4 kg', r:'12–15', s:4}]},
+        {tag:'B', rest:45, items:[{n:'Rear Delt Fly 3–4 kg', r:'15', s:3, note:'ก้มตัวแล้วกางแขน ช่วยดึงมือกลับเข้าการ์ด'},{n:'Hanging Knee Raise', r:'12', s:3}]},
+        {tag:'C', items:[{n:'Plank', r:'45 วิ', s:3}]}
+      ]},
+      pm:SHADOW_OPT},
+    {d:5, s:'ศ', name:'ศุกร์', motto:'เหงื่อคือค่าเรียน จ่ายให้ครบ', pips:['rope','str'],
+      am:ROPE,
+      pm:{type:'str', title:'Full Body Circuit', time:'30–35 นาที', groups:[
+        {part:'4 รอบ · ทำต่อกันทั้งชุด แล้วพัก 90 วิ', tag:'×4', rest:90, items:[
+          {n:'Pull-up', r:'6–8', s:4},{n:'Push-up', r:'10', s:4},{n:'Burpee', r:'8', s:4},
+          {n:'Goblet Squat 12 kg', r:'12', s:4, note:'แทน Jump Squat ลดแรงกระแทกก่อนวิ่งเสาร์'},
+          {n:'Russian Twist 5 kg', r:'20', s:4},{n:'Shadow Boxing เร็ว', r:'1 นาที', s:4}]}
+      ]}},
+    {d:6, s:'ส', name:'เสาร์', motto:'ปอดดี ยก 3 ไม่แผ่ว', pips:['cardio'],
+      am:{type:'cardio', title:'วิ่ง', time:'~50 นาที', note:'ช่วงไหนก็ได้ที่สะดวก', groups:[
+        {tag:'🏃', items:[
+          {n:'วิ่ง', r:'5 km', s:1},
+          {n:'ยืดหลังวิ่ง', r:'10 นาที', s:1, note:'น่อง · hamstring · hip flexor'},
+          {n:'Shadow เบาๆ', r:'10 นาที', s:1, note:'เน้นท่า ไม่ออกแรง ลอง combo ใหม่'}]}
+      ]}}
+  ];
+  var TYPE_LABEL = {rope:'เชือก', str:'เวท', box:'มวย', cardio:'วิ่ง', opt:'ไม่บังคับ', rest:'พัก'};
+  var CHEERS = ['เริ่มวันแรกเลย ลุย!','เปิดสัปดาห์ได้สวย 💪','ไฟกำลังมา 🔥','เกินครึ่งแล้ว อย่าหยุด!','ใกล้แล้ว อีกนิดเดียว','วันสุดท้ายของสัปดาห์ ปิดให้จบ!','ครบทั้งสัปดาห์ แชมป์! 🏆'];
+
+  var today = new Date().getDay(), sel = today;
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(t){ return String(t).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  /* ---------- STORAGE: local cache + cloud sync via /api/southpaw ---------- */
+  var API = '/api/southpaw';
+  function pad(n){ return (n<10?'0':'')+n; }
+  function mondayOf(d){ d=new Date(d); var k=(d.getDay()+6)%7; d.setDate(d.getDate()-k); d.setHours(0,0,0,0); return d; }
+  function weekIdOf(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  var MON = mondayOf(new Date()), WEEK = weekIdOf(MON);
+  var LKEY = 'southpaw-v3-'+WEEK, DKEY = 'southpaw-dirty-'+WEEK;
+  function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
+  function lsSet(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
+  function lsDel(k){ try { localStorage.removeItem(k); } catch(e){} }
+  function blank(){ return {st:{}, notes:{}, bw:'', updatedAt:0}; }
+  function norm(x){ x = (x && typeof x==='object') ? x : {}; return {st:x.st||{}, notes:x.notes||{}, bw:x.bw||'', updatedAt:x.updatedAt||0}; }
+
+  var data = blank();
+  try {
+    var raw = lsGet(LKEY);
+    if(raw) data = norm(JSON.parse(raw));
+    else { // carry over ticks saved by the previous version this week
+      var old = lsGet('southpaw-v2-'+MON.getFullYear()+'-'+(MON.getMonth()+1)+'-'+MON.getDate());
+      if(old){ data.st = JSON.parse(old) || {}; data.updatedAt = Date.now(); lsSet(DKEY,'1'); }
+    }
+  } catch(e){ data = blank(); }
+  var st = data.st;
+  function persistLocal(){ lsSet(LKEY, JSON.stringify(data)); }
+  function save(){ data.updatedAt = Date.now(); persistLocal(); lsSet(DKEY,'1'); scheduleSync(); }
+
+  function syncKey(){ return lsGet('southpaw-sync-key') || ''; }
+  function setSync(state, txt){ var b=$('syncBtn'); if(!b) return; b.dataset.state=state; $('syncTxt').textContent=txt; }
+  var syncTimer=null, pushing=false;
+  function scheduleSync(){
+    if(!syncKey()){ setSync('off','บันทึกในเครื่องนี้ · ยังไม่ซิงก์'); return; }
+    setSync('busy','กำลังบันทึก…'); clearTimeout(syncTimer); syncTimer=setTimeout(push, 700);
+  }
+  function apiFetch(url, opt){ opt=opt||{}; opt.headers=Object.assign({'x-southpaw-key':syncKey()}, opt.headers||{}); return fetch(url, opt); }
+  function handleBad(r){
+    if(r.status===401){ setSync('err','รหัสซิงก์ไม่ถูก'); return true; }
+    if(!r.ok){ setSync('err','เซิร์ฟเวอร์มีปัญหา · เก็บในเครื่องไว้ก่อน'); return true; }
+    return false;
+  }
+  function push(){
+    if(!syncKey() || pushing) return; pushing=true;
+    var sentAt = data.updatedAt, ok = false;
+    apiFetch(API+'?week='+WEEK, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({data:data})})
+      .then(function(r){ if(handleBad(r)) return; ok = true; if(data.updatedAt === sentAt) lsDel(DKEY); setSync('ok','☁️ ซิงก์แล้ว'); })
+      .catch(function(){ setSync('offline','ออฟไลน์ · จะซิงก์เมื่อมีเน็ต'); })
+      .then(function(){ pushing=false; if(ok && lsGet(DKEY)) scheduleSync(); }); // edits made while saving go up next
+  }
+  function pull(){
+    if(!syncKey()){ setSync('off','บันทึกในเครื่องนี้ · ยังไม่ซิงก์'); return Promise.resolve(); }
+    setSync('busy','กำลังโหลด…');
+    return apiFetch(API+'?week='+WEEK).then(function(r){
+      if(handleBad(r)) return;
+      return r.json().then(function(j){
+        var remote = j.data ? norm(j.data) : null, dirty = !!lsGet(DKEY);
+        if(remote && remote.updatedAt > data.updatedAt && !dirty){
+          data = remote; st = data.st; persistLocal();
+          var a = document.activeElement;
+          if(!(a && (a.tagName==='TEXTAREA' || a.tagName==='INPUT'))){ renderAll(); fillLog(); }
+        }
+        if(dirty || (!remote && data.updatedAt)) push(); else setSync('ok','☁️ ซิงก์แล้ว');
+      });
+    }).catch(function(){ setSync('offline','ออฟไลน์ · ใช้ข้อมูลในเครื่อง'); });
+  }
+  window.addEventListener('online', function(){ lsGet(DKEY) ? push() : pull(); });
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') pull(); });
+
+  function fillLog(){ $('bwInput').value = data.bw || ''; }
+  function fmtWeek(id){ var p=id.split('-'), d=new Date(+p[0], +p[1]-1, +p[2]), e=new Date(d); e.setDate(d.getDate()+6);
+    return d.getDate()+'/'+(d.getMonth()+1)+' – '+e.getDate()+'/'+(e.getMonth()+1); }
+  function loadHistory(){
+    var box = $('histBody');
+    if(!syncKey()){ box.innerHTML = '<p class="muted">ตั้งรหัสซิงก์ก่อน แล้วประวัติทุกสัปดาห์จะเก็บไว้บนเซิร์ฟเวอร์</p>'; return; }
+    box.innerHTML = '<p class="muted">กำลังโหลด…</p>';
+    apiFetch(API+'?list=1')
+      .then(function(r){ if(handleBad(r)){ box.innerHTML='<p class="muted">โหลดประวัติไม่สำเร็จ</p>'; return null; } return r.json(); })
+      .then(function(j){
+        if(!j) return;
+        var weeks = j.weeks || [];
+        if(!weeks.length){ box.innerHTML = '<p class="muted">ยังไม่มีประวัติ เริ่มติ๊กสัปดาห์นี้ได้เลย</p>'; return; }
+        box.innerHTML = '<div class="hist">'+weeks.map(function(w){
+          var d = norm(w.week===WEEK ? data : w.data), n = DAYS.filter(function(day){ return isDone(day, d.st); }).length;
+          return '<div class="hrow'+(w.week===WEEK?' cur':'')+'"><span class="hw">'+fmtWeek(w.week)+(w.week===WEEK?' <em>สัปดาห์นี้</em>':'')+'</span>'+
+            '<span class="hbar"><i style="width:'+(n/6*100).toFixed(0)+'%"></i></span><span class="hn">'+n+'/6</span>'+
+            '<span class="hbw">'+(d.bw ? esc(d.bw)+' kg' : '–')+'</span></div>';
+        }).join('')+'</div>';
+      })
+      .catch(function(){ box.innerHTML = '<p class="muted">ออฟไลน์ โหลดประวัติไม่ได้</p>'; });
+  }
+
+  /* completion helpers */
+  function slotKeys(day, slotName){
+    var slot = day[slotName], keys = [];
+    if(!slot || slot.opt) return keys;
+    slot.groups.forEach(function(g,gi){ g.items.forEach(function(it,ii){ for(var s=0;s<it.s;s++) keys.push(day.d+'-'+slotName+'-'+gi+'-'+ii+'-'+s); }); });
+    return keys;
+  }
+  function dayKeys(day){ return slotKeys(day,'am').concat(slotKeys(day,'pm')); }
+  function dayPct(day, s){ s = s || st; var k=dayKeys(day); if(!k.length) return 0; var n=k.filter(function(x){return s[x];}).length; return Math.round(n/k.length*100); }
+  function isDone(day, s){ s = s || st; return !day.rest && !!(s['done-'+day.d] || dayPct(day, s)===100); }
+
+  /* ---------- RENDER ---------- */
+  function renderTabs(){
+    var order=[1,2,3,4,5,6,0];
+    $('tabs').innerHTML = order.map(function(d){
+      var day = DAYS[d];
+      var main = day.rest ? 'rest' : ((day.pm && day.pm.type!=='opt') ? day.pm.type : day.am.type);
+      return '<button type="button" role="tab" class="tab tt-'+main+(d===today?' is-today':'')+(isDone(day)?' done':'')+'" aria-selected="'+(d===sel)+'" data-day="'+d+'">'+
+        '<b>'+day.s+'</b><span class="pips">'+day.pips.map(function(p){return '<i class="c-'+p+'"></i>';}).join('')+'</span></button>';
+    }).join('');
+  }
+
+  function renderSlot(day, slotName, label){
+    var slot = day[slotName]; if(!slot) return '';
+    var h = '<article class="slot t-'+slot.type+'">';
+    h += '<div class="slot-band"><h3>'+label+' · '+esc(slot.title)+(slot.badge?' <small>'+esc(slot.badge)+'</small>':'')+'</h3>'+
+         '<div class="chips"><span class="chip mono">'+esc(slot.time)+'</span></div></div>';
+    h += '<div class="slot-body">';
+    if(slot.note) h += '<p class="slot-note">'+esc(slot.note)+'</p>';
+    slot.groups.forEach(function(g,gi){
+      if(g.part) h += '<p class="part">'+esc(g.part)+'</p>';
+      h += '<div class="group"><div class="gtag">'+esc(g.tag)+'</div><div class="rows">';
+      g.items.forEach(function(it,ii){
+        h += '<div class="row"><span class="name">'+esc(it.n)+'</span><span class="reps">'+(it.s>1?it.s+' × ':'')+esc(it.r)+'</span>';
+        if(it.note) h += '<span class="note">'+esc(it.note)+'</span>';
+        h += '<div class="dots">';
+        for(var s=0;s<it.s;s++){
+          var k = day.d+'-'+slotName+'-'+gi+'-'+ii+'-'+s;
+          h += '<button type="button" class="dot" data-k="'+k+'" aria-pressed="'+(!!st[k])+'" aria-label="'+esc(it.n)+' เซต '+(s+1)+'">'+(st[k]?'✓':(s+1))+'</button>';
+        }
+        h += '</div></div>';
+      });
+      if(g.rest) h += '<button type="button" class="restbtn" data-rest="'+g.rest+'">⏱ พัก '+g.rest+' วิ · กดจับเวลา</button>';
+      h += '</div></div>';
+    });
+    if(slot.rounds) h += '<button type="button" class="bigbtn" id="roundBtn">🥊 เริ่มจับเวลา 4 ยก (3:00 / พัก 1:00)</button>';
+    h += '</div></article>';
+    return h;
+  }
+
+  function renderView(){
+    var day = DAYS[sel], h = '';
+    h += '<div class="dayhead"><div><h2>'+day.name+'</h2><p class="motto">'+esc(day.motto)+'</p></div>'+
+         (day.rest?'':'<span class="daypct">ทำไปแล้ว '+dayPct(day)+'%</span>')+'</div>';
+    if(day.rest){
+      h += '<div class="restday"><b>วันพัก 🛌</b><p>พักเต็มวัน เดินเล่นหรือยืดเบาๆ ได้ กล้ามโตตอนพัก</p></div>';
+    } else {
+      h += renderSlot(day,'am','☀️ เช้า') + renderSlot(day,'pm','🌙 เย็น');
+      var on = !!st['done-'+day.d] || dayPct(day)===100;
+      h += '<button type="button" class="donebtn" id="doneBtn" aria-pressed="'+on+'">'+(on?'✓ วันนี้เสร็จแล้ว เยี่ยม!':'กดเมื่อซ้อมครบวันนี้')+'</button>';
+      h += '<div class="notebox"><label for="note-'+day.d+'">📝 บันทึก'+day.name+'</label>'+
+           '<textarea id="note-'+day.d+'" data-note="'+day.d+'" rows="2" placeholder="เช่น Squat 12 kg ได้ 10 ครั้ง · เชือก 1500 รอบ ไม่หยุด">'+esc(data.notes[day.d]||'')+'</textarea></div>';
+    }
+    $('view').innerHTML = h;
+  }
+
+  function slotSummary(slot){ return slot ? esc(slot.title)+(slot.opt?' (ไม่บังคับ)':'') : '—'; }
+  function renderHero(){
+    var n = DAYS.filter(isDone).length;
+    $('ringNum').textContent = n+'/6';
+    $('ringVal').setAttribute('stroke-dashoffset', (263.9*(1-n/6)).toFixed(1));
+    $('cheer').textContent = CHEERS[n];
+    var t = DAYS[today];
+    $('todayLbl').textContent = 'วันนี้ · '+t.name;
+    $('todaySlots').innerHTML = t.rest
+      ? '<div class="tslot"><small>ทั้งวัน</small><b>พัก 🛌</b></div>'
+      : '<div class="tslot"><small>☀️ เช้า</small><b>'+slotSummary(t.am)+'</b></div><div class="tslot"><small>🌙 เย็น</small><b>'+slotSummary(t.pm)+'</b></div>';
+  }
+  function renderAll(){ renderTabs(); renderView(); renderHero(); }
+
+  /* ---------- EVENTS ---------- */
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    if(b.dataset.day !== undefined){ sel = +b.dataset.day; renderTabs(); renderView(); return; }
+    if(b.dataset.k){
+      var k = b.dataset.k, was = isDone(DAYS[sel]);
+      st[k] = !st[k]; save(); renderAll();
+      var nb = document.querySelector('[data-k="'+k+'"]'); if(nb && st[k]) nb.classList.add('pop');
+      if(!was && isDone(DAYS[sel])) confetti();
+      return;
+    }
+    if(b.id === 'doneBtn'){ var w = isDone(DAYS[sel]); st['done-'+sel] = !st['done-'+sel]; save(); renderAll(); if(!w && isDone(DAYS[sel])) confetti(); return; }
+    if(b.dataset.rest){ startTimer([{label:'พัก', secs:+b.dataset.rest}]); return; }
+    if(b.id === 'roundBtn'){
+      var seq=[]; for(var i=1;i<=4;i++){ seq.push({label:'ยก '+i+' · ชก!', secs:180, work:true, sub:'ยก '+i+' / 4'}); if(i<4) seq.push({label:'พักระหว่างยก', secs:60, sub:'ต่อไป ยก '+(i+1)}); }
+      startTimer(seq); return;
+    }
+    if(b.id === 'dockStop'){ stopTimer(); return; }
+    if(b.id === 'syncBtn'){ var sb=$('syncBox'); sb.open=true; sb.scrollIntoView({behavior:'smooth', block:'center'}); }
+  });
+  document.addEventListener('input', function(e){
+    var t = e.target;
+    if(t.dataset && t.dataset.note !== undefined){ data.notes[t.dataset.note] = t.value; save(); }
+    else if(t.id === 'bwInput'){ data.bw = t.value; save(); }
+  });
+  $('syncForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var v = $('syncKey').value.trim(); if(!v) return;
+    lsSet('southpaw-sync-key', v); $('syncKey').value = '';
+    $('syncMsg').textContent = 'บันทึกรหัสแล้ว กำลังเชื่อมต่อ…';
+    pull().then(function(){
+      var s = $('syncBtn').dataset.state;
+      $('syncMsg').textContent = (s==='ok' || s==='busy') ? 'เชื่อมต่อสำเร็จ ✓ เครื่องนี้ซิงก์แล้ว' : $('syncTxt').textContent;
+    });
+  });
+  $('histBox').addEventListener('toggle', function(){ if(this.open) loadHistory(); });
+
+  /* ---------- CONFETTI ---------- */
+  function confetti(){
+    if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var cols=['#FF2A6D','#FF7A00','#FFC400','#1F62F0','#10A458','#7A4DFF'];
+    for(var i=0;i<60;i++){
+      var c=document.createElement('i'); c.className='confetti';
+      c.style.left=(Math.random()*100)+'vw'; c.style.background=cols[i%cols.length];
+      c.style.setProperty('--dx',(Math.random()*160-80)+'px'); c.style.setProperty('--rot',(Math.random()*720-360)+'deg');
+      c.style.animationDelay=(Math.random()*.4)+'s';
+      document.body.appendChild(c); setTimeout(function(el){ return function(){ el.remove(); }; }(c), 2200);
+    }
+  }
+
+  /* ---------- TIMER ---------- */
+  var tick=null, seq=[], idx=0, left=0, actx=null;
+  function beep(f,d){ try{ actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    var o=actx.createOscillator(), g=actx.createGain(); o.frequency.value=f; o.connect(g); g.connect(actx.destination);
+    g.gain.setValueAtTime(.25, actx.currentTime); g.gain.exponentialRampToValueAtTime(.001, actx.currentTime+d);
+    o.start(); o.stop(actx.currentTime+d); }catch(e){} }
+  function fmt(s){ return Math.floor(s/60)+':'+String(s%60).padStart(2,'0'); }
+  function showPhase(){
+    var p = seq[idx]; left = p.secs;
+    $('dock').classList.toggle('work', !!p.work);
+    $('phase').textContent = p.label; $('dsub').textContent = p.sub || '';
+    $('clock').textContent = fmt(left); $('pbar').style.transition='none'; $('pbar').style.width='0';
+  }
+  function startTimer(s){
+    stopTimer(); seq=s; idx=0; $('dock').hidden=false; beep(880,.15); showPhase();
+    tick = setInterval(function(){
+      left--; var p=seq[idx];
+      $('clock').textContent = fmt(Math.max(left,0));
+      $('pbar').style.transition='width 1s linear'; $('pbar').style.width = ((p.secs-left)/p.secs*100)+'%';
+      if(left>0 && left<=3) beep(660,.1);
+      if(left<=0){
+        idx++;
+        if(idx>=seq.length){ beep(990,.5); $('phase').textContent='เสร็จแล้ว! 🔥'; $('dsub').textContent=''; clearInterval(tick); tick=null; setTimeout(function(){ if(!tick) $('dock').hidden=true; }, 4000); return; }
+        beep(990,.35); showPhase();
+      }
+    },1000);
+  }
+  function stopTimer(){ if(tick) clearInterval(tick); tick=null; $('dock').hidden=true; }
+
+  renderAll(); fillLog(); pull();
+})();
+</script>
+<script>
+if('serviceWorker' in navigator){ window.addEventListener('load', function(){ navigator.serviceWorker.register('/southpaw/sw.js', { scope: '/southpaw/' }).catch(function(){}); }); }
+</script>
+</body>
+</html>
