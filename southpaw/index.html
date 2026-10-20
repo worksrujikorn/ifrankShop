@@ -213,6 +213,25 @@ details.info[open] summary::after{content:"–"}
 .sync[data-state="busy"] i{background:var(--volt);opacity:1;animation:blink 1s infinite}
 .sync[data-state="err"] i,.sync[data-state="offline"] i{background:#FFD0D0;opacity:1}
 @keyframes blink{50%{opacity:.3}}
+.hero-btns{display:flex;gap:6px;flex-wrap:wrap}
+.lock-btn{font-family:var(--mono)}
+.lock-btn[data-state="open"]{background:rgba(255,255,255,.34)}
+textarea[readonly],input[readonly]{opacity:.65;cursor:pointer}
+
+/* ---------- PIN LOCK ---------- */
+.pin-ov{position:fixed;inset:0;z-index:40;background:rgba(8,10,16,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.pin-ov[hidden]{display:none}
+.pin-box{width:100%;max-width:300px;background:var(--surface);color:var(--ink);border-radius:22px;padding:22px 20px 18px;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.pin-box h3{margin:0 0 4px;font-family:var(--display);font-size:20px}
+.pin-box p{margin:0 0 14px;color:var(--muted);font-size:13.5px}
+.pin-box input{width:120px;padding:10px;border-radius:14px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:28px;font-weight:600;text-align:center;letter-spacing:10px}
+.pin-box input:focus{outline:none;border-color:var(--fire2)}
+.pin-box.bad input{border-color:var(--red);animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pin-err{min-height:18px;margin-top:8px;font-size:12.5px;color:var(--red);font-weight:600}
+.pin-actions{display:flex;gap:8px;margin-top:10px}
+.pin-actions button{flex:1;padding:10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-family:var(--body);font-weight:600;cursor:pointer}
+.pin-actions button[type="submit"]{background:var(--fire2);border-color:var(--fire2);color:#fff}
 .card.log{background:var(--surface);border-radius:18px;padding:14px 18px;box-shadow:0 1px 0 var(--line)}
 .log-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .log-row label{font-family:var(--display);font-style:italic;font-weight:800;font-size:17px}
@@ -270,7 +289,10 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       <div class="today-slots" id="todaySlots"></div>
       <div class="hero-foot">
         <span class="cheer" id="cheer"></span>
-        <button type="button" class="sync" id="syncBtn" data-state="off"><i></i><span id="syncTxt">บันทึกในเครื่องนี้</span></button>
+        <div class="hero-btns">
+          <button type="button" class="sync lock-btn" id="lockBtn" data-state="locked">🔒 ล็อกอยู่</button>
+          <button type="button" class="sync" id="syncBtn" data-state="off"><i></i><span id="syncTxt">บันทึกในเครื่องนี้</span></button>
+        </div>
       </div>
     </div>
   </header>
@@ -347,6 +369,16 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   </details>
 
   <p class="foot">ซ้อมหนักวันนี้ ชกง่ายบนเวที 🥊</p>
+</div>
+
+<div class="pin-ov" id="pinOv" hidden>
+  <form class="pin-box" id="pinForm" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
+    <h3 id="pinTitle">🔒 ใส่รหัสเพื่อแก้ไข</h3>
+    <p>ปลดล็อกแล้วแก้ไขได้ 10 นาที</p>
+    <input id="pinInput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" aria-label="รหัส 2 หลัก">
+    <div class="pin-err" id="pinErr"></div>
+    <div class="pin-actions"><button type="button" id="pinCancel">ยกเลิก</button><button type="submit">ปลดล็อก</button></div>
+  </form>
 </div>
 
 <div class="dock" id="dock" hidden>
@@ -451,6 +483,54 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   var st = data.st;
   function persistLocal(){ lsSet(LKEY, JSON.stringify(data)); }
   function save(){ data.updatedAt = Date.now(); persistLocal(); lsSet(DKEY,'1'); scheduleSync(); }
+
+  /* ---------- EDIT LOCK: 2-digit PIN unlocks editing for 10 minutes ----------
+     Only stops casual taps from visitors; the PIN is visible in the page source. */
+  var PIN = '69', UNLOCK_MS = 10*60*1000, UKEY = 'southpaw-unlock-until';
+  var pinThen = null, lockTick = null;
+  function unlocked(){ return Date.now() < (+lsGet(UKEY) || 0); }
+  function applyLock(){
+    var on = unlocked(), b = $('lockBtn');
+    document.querySelectorAll('#bwInput, textarea[data-note]').forEach(function(el){ el.readOnly = !on; });
+    clearInterval(lockTick);
+    if(on){
+      var tick = function(){
+        var left = (+lsGet(UKEY) || 0) - Date.now();
+        if(left <= 0){ applyLock(); var a=document.activeElement; if(a && a.blur) a.blur(); return; }
+        var m = Math.floor(left/60000), sec = Math.floor(left/1000)%60;
+        b.dataset.state = 'open'; b.textContent = '🔓 '+m+':'+pad(sec);
+      };
+      tick(); lockTick = setInterval(tick, 1000);
+    } else { b.dataset.state = 'locked'; b.textContent = '🔒 ล็อกอยู่'; }
+  }
+  function askPin(then){
+    pinThen = then || null;
+    $('pinErr').textContent = ''; $('pinForm').classList.remove('bad');
+    $('pinInput').value = ''; $('pinOv').hidden = false; $('pinInput').focus();
+  }
+  function closePin(){ $('pinOv').hidden = true; pinThen = null; }
+  function guard(then){ if(unlocked()) return true; askPin(then); return false; }
+  $('pinForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    if($('pinInput').value === PIN){
+      lsSet(UKEY, String(Date.now()+UNLOCK_MS)); applyLock();
+      var f = pinThen; closePin(); if(f) f();
+    } else {
+      var f2 = $('pinForm'); f2.classList.remove('bad'); void f2.offsetWidth; f2.classList.add('bad');
+      $('pinErr').textContent = 'รหัสไม่ถูก ลองใหม่'; $('pinInput').value = ''; $('pinInput').focus();
+    }
+  });
+  $('pinInput').addEventListener('input', function(){ if(this.value.length === 2) $('pinForm').requestSubmit ? $('pinForm').requestSubmit() : $('pinForm').dispatchEvent(new Event('submit', {cancelable:true})); });
+  $('pinCancel').addEventListener('click', closePin);
+  $('pinOv').addEventListener('click', function(e){ if(e.target === this) closePin(); });
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !$('pinOv').hidden) closePin(); });
+  // tapping a locked text field asks for the PIN, then puts the cursor back in it
+  document.addEventListener('focusin', function(e){
+    var t = e.target;
+    if(!(t.id === 'bwInput' || (t.dataset && t.dataset.note !== undefined)) || unlocked()) return;
+    t.blur(); askPin(function(){ t.focus(); });
+  });
+  window.addEventListener('storage', function(e){ if(e.key === UKEY) applyLock(); }); // other tabs
 
   function syncKey(){ return lsGet('southpaw-sync-key') || ''; }
   function setSync(state, txt){ var b=$('syncBtn'); if(!b) return; b.dataset.state=state; $('syncTxt').textContent=txt; }
@@ -593,30 +673,34 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       ? '<div class="tslot"><small>ทั้งวัน</small><b>พัก 🛌</b></div>'
       : '<div class="tslot"><small>☀️ เช้า</small><b>'+slotSummary(t.am)+'</b></div><div class="tslot"><small>🌙 เย็น</small><b>'+slotSummary(t.pm)+'</b></div>';
   }
-  function renderAll(){ renderTabs(); renderView(); renderHero(); }
+  function renderAll(){ renderTabs(); renderView(); renderHero(); applyLock(); }
 
   /* ---------- EVENTS ---------- */
   document.addEventListener('click', function(e){
     var b = e.target.closest('button'); if(!b) return;
     if(b.dataset.day !== undefined){ sel = +b.dataset.day; renderTabs(); renderView(); return; }
     if(b.dataset.k){
-      var k = b.dataset.k, was = isDone(DAYS[sel]);
+      var k = b.dataset.k;
+      if(!guard(function(){ var nb0 = document.querySelector('[data-k="'+k+'"]'); if(nb0) nb0.click(); })) return;
+      var was = isDone(DAYS[sel]);
       st[k] = !st[k]; save(); renderAll();
       var nb = document.querySelector('[data-k="'+k+'"]'); if(nb && st[k]) nb.classList.add('pop');
       if(!was && isDone(DAYS[sel])) confetti();
       return;
     }
-    if(b.id === 'doneBtn'){ var w = isDone(DAYS[sel]); st['done-'+sel] = !st['done-'+sel]; save(); renderAll(); if(!w && isDone(DAYS[sel])) confetti(); return; }
+    if(b.id === 'doneBtn'){ if(!guard()) return; var w = isDone(DAYS[sel]); st['done-'+sel] = !st['done-'+sel]; save(); renderAll(); if(!w && isDone(DAYS[sel])) confetti(); return; }
     if(b.dataset.rest){ startTimer([{label:'พัก', secs:+b.dataset.rest}]); return; }
     if(b.id === 'roundBtn'){
       var seq=[]; for(var i=1;i<=4;i++){ seq.push({label:'ยก '+i+' · ชก!', secs:180, work:true, sub:'ยก '+i+' / 4'}); if(i<4) seq.push({label:'พักระหว่างยก', secs:60, sub:'ต่อไป ยก '+(i+1)}); }
       startTimer(seq); return;
     }
     if(b.id === 'dockStop'){ stopTimer(); return; }
+    if(b.id === 'lockBtn'){ if(unlocked()){ lsDel(UKEY); applyLock(); } else askPin(); return; }
     if(b.id === 'syncBtn'){ var sb=$('syncBox'); sb.open=true; sb.scrollIntoView({behavior:'smooth', block:'center'}); }
   });
   document.addEventListener('input', function(e){
     var t = e.target;
+    if(t.readOnly || !unlocked()) return;
     if(t.dataset && t.dataset.note !== undefined){ data.notes[t.dataset.note] = t.value; save(); }
     else if(t.id === 'bwInput'){ data.bw = t.value; save(); }
   });
