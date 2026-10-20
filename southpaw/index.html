@@ -508,7 +508,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
         <span class="cheer" id="cheer"></span>
         <div class="hero-btns">
           <button type="button" class="sync lock-btn" id="lockBtn" data-state="locked">🔒 ล็อกอยู่</button>
-          <button type="button" class="sync" id="syncBtn" data-state="off"><i></i><span id="syncTxt">บันทึกในเครื่องนี้</span></button>
+          <button type="button" class="sync" id="syncBtn" data-state="off"><i></i><span id="syncTxt">กำลังโหลด…</span></button>
           <button type="button" class="sync" id="setBtn" aria-label="ตั้งค่า">⚙️</button>
         </div>
       </div>
@@ -793,23 +793,23 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   function save(field){ var now = Date.now(); data.updatedAt = now; if(field) data.ts[field] = now; editSeq++; persistLocal(); lsSet(DKEY,'1'); scheduleSync(); }
 
   /* ---------- EDIT LOCK ----------
-     A device that holds a working sync key is trusted and never locked. Other devices need the 2-digit
-     PIN, which unlocks editing for 5 minutes. The PIN only stops casual taps; it is visible in the page
-     source, and nothing reaches the server without the sync key anyway. */
-  var PIN = '69', UNLOCK_MS = 5*60*1000, UKEY = 'southpaw-unlock-until', KOK = 'southpaw-key-ok';
-  var pinThen = null, lockTick = null;
-  function syncKey(){ return lsGet('southpaw-sync-key') || ''; }
-  function keyOk(){ return !!syncKey() && lsGet(KOK) === '1'; }
-  function unlocked(){ return keyOk() || Date.now() < (+lsGet(UKEY) || 0); }
+     Anyone can view; every edit needs the PIN, every time the app is opened. The server checks the PIN
+     (it is not in this page) and returns an edit token valid for 5 minutes. The token lives only in memory,
+     so reloading or reopening the app always starts locked. */
+  var UNLOCK_MS = 5*60*1000 - 5000;
+  var pinThen = null, lockTick = null, unlockUntil = 0, editToken = '', pinBusy = false;
+  lsDel('southpaw-unlock-until'); lsDel('southpaw-key-ok'); // left by older versions
+  function syncKey(){ return lsGet('southpaw-sync-key') || ''; }   // optional full-access key from older versions
+  function unlocked(){ return Date.now() < unlockUntil; }
+  function canWrite(){ return (unlocked() && !!editToken) || !!syncKey(); }
+  function relock(){ unlockUntil = 0; editToken = ''; applyLock(); }
   function applyLock(){
     var on = unlocked(), b = $('lockBtn');
     document.querySelectorAll('[data-guard]').forEach(function(el){ el.readOnly = !on; });
     clearInterval(lockTick);
-    b.hidden = keyOk();
-    if(keyOk()) return;
     if(on){
       var tick = function(){
-        var left = (+lsGet(UKEY) || 0) - Date.now();
+        var left = unlockUntil - Date.now();
         if(left <= 0){ applyLock(); var a=document.activeElement; if(a && a.blur) a.blur(); return; }
         b.dataset.state = 'open'; b.textContent = '🔓 '+Math.floor(left/60000)+':'+pad(Math.floor(left/1000)%60);
       };
@@ -823,15 +823,27 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   }
   function closePin(){ $('pinOv').hidden = true; pinThen = null; }
   function guard(then){ if(unlocked()) return true; askPin(then); return false; }
+  function pinFail(msg){
+    var f2 = $('pinForm'); f2.classList.remove('bad'); void f2.offsetWidth; f2.classList.add('bad');
+    $('pinErr').textContent = msg; $('pinInput').value = ''; $('pinInput').focus();
+  }
   $('pinForm').addEventListener('submit', function(e){
     e.preventDefault();
-    if($('pinInput').value === PIN){
-      lsSet(UKEY, String(Date.now()+UNLOCK_MS)); applyLock();
-      var f = pinThen; closePin(); if(f) f();
-    } else {
-      var f2 = $('pinForm'); f2.classList.remove('bad'); void f2.offsetWidth; f2.classList.add('bad');
-      $('pinErr').textContent = 'รหัสไม่ถูก ลองใหม่'; $('pinInput').value = ''; $('pinInput').focus();
-    }
+    var v = $('pinInput').value.trim(); if(!v || pinBusy) return;
+    pinBusy = true; $('pinErr').textContent = 'กำลังตรวจสอบ…';
+    fetch(API+'?doc=unlock', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({pin:v})})
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){
+        if(r.ok && j.token){
+          editToken = j.token; unlockUntil = Date.now()+UNLOCK_MS; applyLock();
+          var f = pinThen; closePin();
+          if(lsGet(DKEY)) scheduleSync();
+          if(f) f();
+        } else if(r.status === 401) pinFail('รหัสไม่ถูก ลองใหม่'+(j.triesLeft <= 3 ? ' (เหลือ '+j.triesLeft+' ครั้ง)' : ''));
+        else if(r.status === 429) pinFail('ใส่ผิดหลายครั้ง ลองใหม่ในอีก '+(j.retryInMin||15)+' นาที');
+        else pinFail('เซิร์ฟเวอร์มีปัญหา ลองใหม่อีกครั้ง');
+      }); })
+      .catch(function(){ pinFail('ต้องต่ออินเทอร์เน็ตเพื่อปลดล็อก'); })
+      .then(function(){ pinBusy = false; });
   });
   $('pinInput').addEventListener('input', function(){ if(this.value.length === 2) $('pinForm').requestSubmit ? $('pinForm').requestSubmit() : $('pinForm').dispatchEvent(new Event('submit', {cancelable:true})); });
   $('pinCancel').addEventListener('click', closePin);
@@ -842,23 +854,26 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     if(!(t.matches && t.matches('[data-guard]')) || unlocked()) return;
     t.blur(); askPin(function(){ var again = t.id ? $(t.id) : null; (again || t).focus(); });
   });
-  window.addEventListener('storage', function(e){ if(e.key === UKEY) applyLock(); }); // other tabs
 
   /* ---------- SYNC ---------- */
   function setSync(state, txt){ var b=$('syncBtn'); if(!b) return; b.dataset.state=state; $('syncTxt').textContent=txt; }
   var syncTimer=null, pushing=false;
   function scheduleSync(){
-    if(!syncKey()){ setSync('off','บันทึกในเครื่องนี้ · ยังไม่ซิงก์'); return; }
+    if(!canWrite()){ setSync('err','ยังไม่ได้บันทึกขึ้นเซิร์ฟเวอร์ · ใส่รหัสเพื่อบันทึก'); return; }
     setSync('busy','กำลังบันทึก…'); clearTimeout(syncTimer); syncTimer=setTimeout(push, 700);
   }
-  function apiFetch(url, opt){ opt=opt||{}; opt.headers=Object.assign({'x-southpaw-key':syncKey()}, opt.headers||{}); return fetch(url, opt); }
+  function apiFetch(url, opt){
+    opt = opt||{}; var h = {};
+    if(syncKey()) h['x-southpaw-key'] = syncKey();
+    if(editToken) h['x-southpaw-token'] = editToken;
+    opt.headers = Object.assign(h, opt.headers||{}); return fetch(url, opt);
+  }
   function apiJSON(url, method, body){
     return apiFetch(url, body === undefined ? {method:method||'GET'} : {method:method, headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)})
-      .then(function(r){ if(handleBad(r)) throw new Error('http '+r.status); markOk(); return r.json(); });
+      .then(function(r){ if(handleBad(r)) throw new Error('http '+r.status); return r.json(); });
   }
-  function markOk(){ if(lsGet(KOK) !== '1'){ lsSet(KOK,'1'); applyLock(); } }
   function handleBad(r){
-    if(r.status===401){ setSync('err','รหัสซิงก์ไม่ถูก'); if(lsGet(KOK)){ lsDel(KOK); applyLock(); } return true; }
+    if(r.status===401){ relock(); setSync('err','ล็อกแล้ว · ใส่รหัสเพื่อบันทึก'); return true; }
     if(!r.ok){ setSync('err','เซิร์ฟเวอร์มีปัญหา · เก็บในเครื่องไว้ก่อน'); return true; }
     return false;
   }
@@ -874,7 +889,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     if(renderLater && !typing()){ renderLater = false; renderAll(); fillLog(); }
   }, 0); });
   function push(){
-    if(!syncKey() || pushing) return; pushing=true;
+    if(!canWrite() || pushing) return; pushing=true;
     var sentSeq = editSeq, ok = false;
     apiJSON(API+'?week='+WEEK, 'PUT', {data:data})
       .then(function(j){
@@ -886,15 +901,17 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       .then(function(){ pushing=false; if(ok && lsGet(DKEY)) scheduleSync(); }); // edits made while saving go up next
   }
   function pull(quiet){
-    if(!syncKey()){ setSync('off','บันทึกในเครื่องนี้ · ยังไม่ซิงก์'); return Promise.resolve(); }
     if(pushing) return Promise.resolve();
     if(!quiet) setSync('busy','กำลังโหลด…');
     return apiJSON(API+'?week='+WEEK).then(function(j){
       if(j.data) adopt(merge(data, j.data));
-      if(lsGet(DKEY) || (!j.data && data.updatedAt)) push(); else setSync('ok','☁️ ซิงก์แล้ว');
+      var pending = lsGet(DKEY) || (!j.data && data.updatedAt);
+      if(pending && canWrite()) push();
+      else if(pending) setSync('err','ยังไม่ได้บันทึกขึ้นเซิร์ฟเวอร์ · ใส่รหัสเพื่อบันทึก');
+      else setSync('ok','☁️ ซิงก์แล้ว');
       var at = +j.programAt || 0;
       if(at > progAt) pullProgram();
-      else if(progAt > at || !at) pushProgram();     // also gives the reminder service the program
+      else if((progAt > at || !at) && canWrite()) pushProgram();     // also gives the reminder service the program
     }).catch(function(e){ if(!/^http/.test(e && e.message)) setSync('offline','ออฟไลน์ · ใช้ข้อมูลในเครื่อง'); });
   }
   function storeProgram(){ lsSet(PKEY, JSON.stringify({days:DAYS, updatedAt:progAt})); }
@@ -905,7 +922,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   }
   function pullProgram(){ return apiJSON(API+'?doc=program').then(function(j){ if(j.program && +j.updatedAt > progAt) adoptProgram(j.program.days, +j.updatedAt); }).catch(function(){}); }
   function pushProgram(){
-    if(!syncKey()) return Promise.resolve();
+    if(!canWrite()) return Promise.resolve();
     if(!progAt){ progAt = 1; storeProgram(); }
     return apiJSON(API+'?doc=program', 'PUT', {program:{days:DAYS}, updatedAt:progAt})
       .then(function(j){ if(j.program && +j.updatedAt > progAt) adoptProgram(j.program.days, +j.updatedAt); }).catch(function(){});
@@ -919,7 +936,19 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   });
   window.addEventListener('focus', function(){ if(!weekChanged()) pull(true); });
   // keep an open screen (e.g. the computer) up to date with edits from other devices
-  setInterval(function(){ if(document.visibilityState==='visible' && !weekChanged()) pull(true); }, 15000);
+  setInterval(function(){ if(document.visibilityState==='visible' && !weekChanged() && !idleReload()) pull(true); }, 15000);
+
+  // A page left open without a touch for 5 minutes reloads, so it is locked again and shows fresh data.
+  // Never while a timer runs (boxing rounds take ~15 min) or while typing.
+  var IDLE_MS = 5*60*1000, lastActive = Date.now();
+  ['pointerdown','keydown','input','wheel','touchmove'].forEach(function(ev){
+    document.addEventListener(ev, function(){ lastActive = Date.now(); }, {passive:true, capture:true});
+  });
+  function idleReload(){
+    if(document.visibilityState !== 'visible' || tick || typing() || Date.now() - lastActive < IDLE_MS) return false;
+    location.reload(); return true;
+  }
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') idleReload(); });
 
   function fillLog(){ $('bwInput').value = data.bw || ''; }
 
@@ -942,7 +971,6 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     return (weeksCache = m);
   }
   function loadHistory(force){
-    if(!syncKey()) return Promise.resolve();
     if(histLoading) return histLoading;
     if(histLoaded && !force) return Promise.resolve();
     histLoading = apiJSON(API+'?list=1').then(function(j){
@@ -1131,7 +1159,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       '<div class="cal-grid">'+['จ','อ','พ','พฤ','ศ','ส','อา'].map(function(x){ return '<span class="cal-dow">'+x+'</span>'; }).join('')+cells+'</div>'+
       '<div class="cal-legend"><span><i class="sw-done"></i>ซ้อมครบ</span><span><i class="sw-part"></i>ทำบางส่วน</span><span><i class="sw-miss"></i>พลาด</span><span><i class="sw-today"></i>วันนี้</span>'+
         (thisMonth?'':'<button type="button" class="pill" data-calnav="0" style="margin-left:auto">กลับมาเดือนนี้</button>')+'</div></div>'+
-      (syncKey() ? '' : '<p class="hint">💡 ตั้งรหัสซิงก์ (⚙️) เพื่อให้ปฏิทินเห็นประวัติจากทุกเครื่อง ตอนนี้แสดงเฉพาะข้อมูลในเครื่องนี้</p>');
+      '';
   }
 
   /* ---------- RENDER: STATS ---------- */
@@ -1195,7 +1223,6 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
           '<span class="hbar"><i style="width:'+Math.min(100, n/total*100).toFixed(0)+'%"></i></span><span class="hn">'+n+'/'+total+'</span>'+
           '<span class="hbw">'+(bw ? esc(bw)+' kg' : '–')+'</span></div>';
       }).join('')+'</div></div>';
-    if(!syncKey()) h += '<p class="hint">💡 ตั้งรหัสซิงก์ (⚙️) เพื่อเก็บประวัติบนเซิร์ฟเวอร์และเห็นจากทุกเครื่อง</p>';
     $('pane-stats').innerHTML = h;
   }
 
@@ -1212,7 +1239,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   }
   function setPane(p){
     pane = p; lsSet('southpaw-pane', p); renderPane(); applyLock();
-    if(p !== 'day' && syncKey() && !histLoaded) loadHistory().then(function(){ if(pane === p) renderPane(); });
+    if(p !== 'day' && !histLoaded) loadHistory().then(function(){ if(pane === p) renderPane(); });
   }
   function renderAll(){ renderHero(); renderPane(); applyLock(); if(sheetKind) refreshSheet(); if(!$('wo').hidden) renderWorkout(); }
 
@@ -1276,10 +1303,8 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   function sw(key, label, hint){ return '<label class="sw"><span>'+label+(hint?'<small>'+hint+'</small>':'')+'</span><input type="checkbox" data-set="'+key+'"'+(SET[key]?' checked':'')+'></label>'; }
   function sheetSettings(){
     var h = '';
-    h += '<div class="sec"><h4>☁️ ซิงก์ข้ามเครื่อง</h4>'+
-      '<p class="hint" style="margin-bottom:8px">'+(keyOk() ? '✓ เครื่องนี้ซิงก์แล้ว และแก้ไขได้โดยไม่ต้องใส่รหัส 69' : syncKey() ? 'ใส่รหัสแล้ว กำลังตรวจสอบ…' : 'ใส่รหัสเดียวกับ SOUTHPAW_KEY ที่ตั้งไว้ใน Vercel ใส่ครั้งเดียวต่อเครื่อง')+'</p>'+
-      '<form id="syncForm" class="btn-row sync-set"><input id="syncKey" type="password" autocomplete="current-password" placeholder="'+(syncKey()?'เปลี่ยนรหัสซิงก์':'รหัสซิงก์')+'" aria-label="รหัสซิงก์"><button type="submit" style="flex:none">บันทึก</button></form>'+
-      '<p class="msg" id="syncMsg"></p></div>';
+    h += '<div class="sec"><h4>☁️ ข้อมูล</h4>'+
+      '<p class="hint">ข้อมูลทั้งหมดเก็บบนเซิร์ฟเวอร์ เปิดจากเบราว์เซอร์ไหนก็เห็นข้อมูลชุดเดียวกัน ส่วนการแก้ไขต้องใส่รหัสทุกครั้งที่เปิดแอป (ปลดล็อกได้ 5 นาที)</p></div>';
     h += '<div class="sec"><h4>💪 ระหว่างซ้อม</h4>'+
       sw('autoRest','จับเวลาพักให้เองหลังติ๊กเซต','ใช้เวลาพักของแต่ละกลุ่ม เช่น A พัก 60 วิ')+
       sw('sound','เสียงตัวจับเวลา')+
@@ -1294,7 +1319,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       '<p class="msg" id="pushMsg">'+esc(pushMsg)+'</p></div>';
     h += '<div class="sec"><h4>📝 ตารางซ้อม</h4><p class="hint" style="margin-bottom:8px">แก้ชื่อท่า น้ำหนัก จำนวนเซต เวลาพัก ได้เอง ทุกเครื่องที่ซิงก์จะเห็นตารางเดียวกัน</p>'+
       '<button type="button" class="btn block main" data-edit>✏️ แก้ตารางซ้อม</button></div>';
-    if(!keyOk() && unlocked()) h += '<div class="sec"><button type="button" class="btn block" data-lock-now>🔒 ล็อกตอนนี้</button></div>';
+    if(unlocked()) h += '<div class="sec"><button type="button" class="btn block" data-lock-now>🔒 ล็อกตอนนี้</button></div>';
     return {title:'⚙️ ตั้งค่า', html:h};
   }
 
@@ -1517,7 +1542,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   function isIOS(){ return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
   function standalone(){ return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone; }
   function enablePush(){
-    if(!syncKey()) return Promise.reject(new Error('ตั้งรหัสซิงก์ก่อน แล้วค่อยเปิดการแจ้งเตือน'));
+    if(!canWrite()) return Promise.reject(new Error('ใส่รหัสปลดล็อกก่อน แล้วค่อยเปิดการแจ้งเตือน'));
     if(!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window))
       return Promise.reject(new Error(isIOS() && !standalone() ? 'บน iPhone ต้องเพิ่มแอปไว้ที่หน้าจอโฮมก่อน (แชร์ → เพิ่มไปยังหน้าจอโฮม) แล้วเปิดจากไอคอน' : 'เบราว์เซอร์นี้ไม่รองรับการแจ้งเตือน'));
     return Notification.requestPermission().then(function(p){
@@ -1614,7 +1639,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     }
     if(b.id === 'dockStop'){ stopTimer(); return; }
     if(b.id === 'dockAdd'){ addTime(15); return; }
-    if(b.id === 'lockBtn'){ if(unlocked()){ lsDel(UKEY); applyLock(); } else askPin(); return; }
+    if(b.id === 'lockBtn'){ if(unlocked()) relock(); else askPin(); return; }
     if(b.id === 'syncBtn' || b.id === 'setBtn'){ openSheet('settings'); return; }
     if(b.dataset.wkoff !== undefined){ wkOff = Math.min(0, wkOff + (+b.dataset.wkoff)); renderWeek(); if(wkOff < 0) loadHistory().then(function(){ if(pane==='week') renderWeek(); }); return; }
     if(b.dataset.wkday !== undefined){ if(wkOff === 0){ sel = +b.dataset.wkday; setPane('day'); window.scrollTo({top:0, behavior:'smooth'}); } else openSheet('date', b.dataset.date); return; }
@@ -1625,7 +1650,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     if(b.dataset.edit !== undefined){ if(!guard(openEditor)) return; openEditor(); return; }
     if(b.dataset.edDay !== undefined){ edDay = +b.dataset.edDay; refreshSheet(); $('sheetBody').parentNode.scrollTop = 0; return; }
     if(b.dataset.edact){ edAction(b); return; }
-    if(b.dataset.lockNow !== undefined){ lsDel(UKEY); applyLock(); refreshSheet(); return; }
+    if(b.dataset.lockNow !== undefined){ relock(); refreshSheet(); return; }
     if(b.dataset.card !== undefined){ makeCard(); return; }
     if(b.dataset.cardShare !== undefined && cardBlob){
       var file = new File([cardBlob], 'southpaw-'+WEEK+'.png', {type:'image/png'});
@@ -1633,6 +1658,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       return;
     }
     if(b.dataset.pushTest !== undefined){
+      if(!canWrite()){ askPin(function(){ b.click(); }); return; }
       setPushMsg('กำลังส่ง…');
       currentSub().then(function(s){ if(!s) throw new Error('เครื่องนี้ยังไม่ได้เปิดการแจ้งเตือน'); return apiJSON(API+'?doc=pushtest', 'POST', {endpoint:s.endpoint}); })
         .then(function(){ setPushMsg('ส่งแล้ว ✓ ควรเห็นแจ้งเตือนภายในไม่กี่วินาที', 'ok'); })
@@ -1655,6 +1681,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     var t = e.target; if(!t.dataset.set) return;
     var key = t.dataset.set;
     if(key === 'push'){
+      if(!canWrite()){ t.checked = !t.checked; askPin(function(){ var el = document.querySelector('[data-set="push"]'); if(el){ el.checked = !el.checked; el.dispatchEvent(new Event('change', {bubbles:true})); } }); return; }
       t.disabled = true; setPushMsg(t.checked ? 'กำลังเปิด…' : 'กำลังปิด…');
       (t.checked ? enablePush() : disablePush()).then(function(){
         SET.push = t.checked; saveSet(); setPushMsg(t.checked ? 'เปิดแล้ว ✓ จะเตือนทุกเช้า' : 'ปิดแล้ว', 'ok'); refreshSheet();
@@ -1666,18 +1693,6 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     }
     SET[key] = t.checked; saveSet();
     if(key === 'keepAwake') syncWake();
-  });
-  document.addEventListener('submit', function(e){
-    if(e.target.id !== 'syncForm') return;
-    e.preventDefault();
-    var v = $('syncKey').value.trim(); if(!v) return;
-    lsSet('southpaw-sync-key', v); lsDel(KOK); $('syncKey').value = '';
-    $('syncMsg').textContent = 'บันทึกรหัสแล้ว กำลังเชื่อมต่อ…'; $('syncMsg').className = 'msg';
-    pull().then(function(){
-      var ok = keyOk(), m = $('syncMsg');
-      if(m){ m.textContent = ok ? 'เชื่อมต่อสำเร็จ ✓ เครื่องนี้ซิงก์แล้ว' : $('syncTxt').textContent; m.className = 'msg '+(ok?'ok':'err'); }
-      histLoaded = false; if(ok) loadHistory().then(function(){ if(pane !== 'day') renderPane(); });
-    });
   });
   document.addEventListener('keydown', function(e){
     if(e.key !== 'Escape') return;
@@ -1698,7 +1713,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   }
 
   renderAll(); fillLog(); pull(); syncWake();
-  if(syncKey()) loadHistory().then(function(){ if(pane !== 'day') renderPane(); else renderView(); });
+  loadHistory().then(function(){ if(pane !== 'day') renderPane(); else renderView(); });
 })();
 </script>
 <script>

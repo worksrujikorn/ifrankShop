@@ -1,8 +1,14 @@
 // Vercel serverless function: Southpaw training data in MongoDB Atlas.
 // Env vars needed in Vercel:
 //   MONGODB_URI     (added automatically when you connect MongoDB Atlas to the project)
-//   SOUTHPAW_KEY    (your own password; every device sends it in x-southpaw-key)
+//   SOUTHPAW_KEY    (your own secret; signs edit tokens, and also works as a full-access key in x-southpaw-key)
+//   SOUTHPAW_PIN    (optional; the edit PIN, default "69")
 //
+// Reading is open to every browser, so the owner's data shows up wherever the app is opened.
+// Writing needs an edit token from POST ?doc=unlock { pin } (valid 5 minutes, sent in x-southpaw-token)
+// or the SOUTHPAW_KEY. Wrong PINs are rate limited, since a 2-digit PIN has only 100 options.
+//
+// POST   ?doc=unlock             { pin }                   → { token, expiresAt }
 // GET    ?list=1                 every saved week, newest first (max 52)
 // GET    ?week=YYYY-MM-DD        one week + the program's updatedAt
 // PUT    ?week=YYYY-MM-DD        { data }                  merge into the week, returns the merged week
@@ -12,16 +18,43 @@
 // PUT    ?doc=push               { subscription }          remember this device for reminders
 // DELETE ?doc=push               { endpoint }
 // POST   ?doc=pushtest           { endpoint }              send a test notification now
-import { timingSafeEqual } from 'node:crypto';
+import { timingSafeEqual, createHmac } from 'node:crypto';
 import { HAS_DB, col, mergeWeek, getVapid, sendPush, todayMessage } from './_southpaw-db.mjs';
 
 const SECRET = process.env.SOUTHPAW_KEY || '';
+const PIN = process.env.SOUTHPAW_PIN || '69';
 const WEEK_RE = /^\d{4}-\d{2}-\d{2}$/;
+const TOKEN_MS = 5 * 60 * 1000;
+const MAX_FAILS = 8, FAIL_WINDOW_MS = 15 * 60 * 1000;
 
-function authorized(req) {
-  const got = Buffer.from(String(req.headers['x-southpaw-key'] || ''));
-  const want = Buffer.from(SECRET);
-  return SECRET && got.length === want.length && timingSafeEqual(got, want);
+function same(a, b) {
+  const x = Buffer.from(String(a)), y = Buffer.from(String(b));
+  return x.length === y.length && timingSafeEqual(x, y);
+}
+const sign = (payload) => createHmac('sha256', SECRET).update('southpaw-edit:' + payload).digest('base64url');
+function makeToken() {
+  const expiresAt = Date.now() + TOKEN_MS;
+  return { token: expiresAt + '.' + sign(String(expiresAt)), expiresAt };
+}
+function canWrite(req) {
+  if (SECRET && same(req.headers['x-southpaw-key'] || '', SECRET)) return true;
+  const [exp, sig] = String(req.headers['x-southpaw-token'] || '').split('.');
+  return +exp > Date.now() && !!sig && same(sig, sign(exp));
+}
+
+async function unlock(req, res) {
+  const meta = col('meta'), now = Date.now();
+  const doc = (await meta.findOne({ _id: 'pinfails' })) || { count: 0, since: now };
+  if (now - doc.since > FAIL_WINDOW_MS) { doc.count = 0; doc.since = now; }
+  if (doc.count >= MAX_FAILS) {
+    return res.status(429).json({ error: 'too many tries', retryInMin: Math.ceil((doc.since + FAIL_WINDOW_MS - now) / 60000) });
+  }
+  if (!same(readBody(req).pin || '', PIN)) {
+    await meta.updateOne({ _id: 'pinfails' }, { $set: { count: doc.count + 1, since: doc.since } }, { upsert: true });
+    return res.status(401).json({ error: 'wrong pin', triesLeft: MAX_FAILS - doc.count - 1 });
+  }
+  if (doc.count) await meta.deleteOne({ _id: 'pinfails' });
+  return res.status(200).json(makeToken());
 }
 function readBody(req) {
   let body = req.body;
@@ -117,10 +150,11 @@ async function weekDoc(req, res) {
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (!HAS_DB || !SECRET) return res.status(500).json({ error: 'server not configured' });
-  if (!authorized(req)) return res.status(401).json({ error: 'unauthorized' });
 
   try {
     const doc = String(req.query.doc || '');
+    if (doc === 'unlock' && req.method === 'POST') return await unlock(req, res);
+    if (req.method !== 'GET' && !canWrite(req)) return res.status(401).json({ error: 'locked' });
     const r = doc === 'program' ? await programDoc(req, res) : doc ? await pushDoc(req, res, doc) : await weekDoc(req, res);
     if (r !== null) return r;
     res.setHeader('Allow', 'GET, PUT, POST, DELETE');
