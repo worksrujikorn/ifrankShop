@@ -593,7 +593,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
 <div class="pin-ov" id="pinOv" hidden>
   <form class="pin-box" id="pinForm" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
     <h3 id="pinTitle">🔒 ใส่รหัสเพื่อแก้ไข</h3>
-    <p>ปลดล็อกแล้วแก้ไขได้ 10 นาที</p>
+    <p>ปลดล็อกแล้วแก้ไขได้ 5 นาที</p>
     <input id="pinInput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="2" autocomplete="off" aria-label="รหัส 2 หลัก">
     <div class="pin-err" id="pinErr"></div>
     <div class="pin-actions"><button type="button" id="pinCancel">ยกเลิก</button><button type="submit">ปลดล็อก</button></div>
@@ -794,9 +794,9 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
 
   /* ---------- EDIT LOCK ----------
      A device that holds a working sync key is trusted and never locked. Other devices need the 2-digit
-     PIN, which unlocks editing for 10 minutes. The PIN only stops casual taps; it is visible in the page
+     PIN, which unlocks editing for 5 minutes. The PIN only stops casual taps; it is visible in the page
      source, and nothing reaches the server without the sync key anyway. */
-  var PIN = '69', UNLOCK_MS = 10*60*1000, UKEY = 'southpaw-unlock-until', KOK = 'southpaw-key-ok';
+  var PIN = '69', UNLOCK_MS = 5*60*1000, UKEY = 'southpaw-unlock-until', KOK = 'southpaw-key-ok';
   var pinThen = null, lockTick = null;
   function syncKey(){ return lsGet('southpaw-sync-key') || ''; }
   function keyOk(){ return !!syncKey() && lsGet(KOK) === '1'; }
