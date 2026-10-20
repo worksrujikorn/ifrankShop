@@ -468,8 +468,37 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   function lsGet(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }
   function lsSet(k,v){ try { localStorage.setItem(k,v); } catch(e){} }
   function lsDel(k){ try { localStorage.removeItem(k); } catch(e){} }
-  function blank(){ return {st:{}, notes:{}, bw:'', updatedAt:0}; }
-  function norm(x){ x = (x && typeof x==='object') ? x : {}; return {st:x.st||{}, notes:x.notes||{}, bw:x.bw||'', updatedAt:x.updatedAt||0}; }
+  function blank(){ return {st:{}, notes:{}, bw:'', ts:{}, updatedAt:0}; }
+  function norm(x){
+    x = (x && typeof x==='object') ? x : {};
+    var ts = {}; Object.keys(x.ts||{}).forEach(function(f){ ts[f] = x.ts[f]; });
+    var out = {st:x.st||{}, notes:x.notes||{}, bw:x.bw||'', ts:ts, updatedAt:x.updatedAt||0};
+    // records saved before per-field times existed: pin each field to the record's time once, so a later
+    // edit elsewhere in the week (which moves updatedAt) can't make stale fields look new
+    function pin(f){ if(!(+out.ts[f] > 0)) out.ts[f] = out.updatedAt; }
+    Object.keys(out.st).forEach(function(k){ pin('st:'+k); });
+    Object.keys(out.notes).forEach(function(k){ pin('note:'+k); });
+    if(out.bw !== '') pin('bw');
+    return out;
+  }
+  // Field-level merge: every set tick, note and body weight keeps its own edit time (ts['st:<key>'],
+  // ts['note:<day>'], ts.bw), and the newer edit of each field wins. Older records without ts fall back
+  // to the record's updatedAt (pinned in norm). Same rules as mergeWeek() in api/southpaw.mjs.
+  function merge(a, b){
+    a = norm(a); b = norm(b);
+    var out = {st:{}, notes:{}, bw:'', ts:{}, updatedAt:Math.max(a.updatedAt, b.updatedAt)};
+    function t(x, f){ return +x.ts[f] || 0; }
+    function take(f, inA, inB, va, vb, set){
+      if(!inA && !inB) return;
+      var ta = inA ? t(a,f) : -1, tb = inB ? t(b,f) : -1;
+      set(tb > ta ? vb : va); out.ts[f] = Math.max(ta, tb);
+    }
+    function keys(x, y){ var o={}; Object.keys(x).concat(Object.keys(y)).forEach(function(k){ o[k]=1; }); return Object.keys(o); }
+    keys(a.st, b.st).forEach(function(k){ take('st:'+k, k in a.st, k in b.st, a.st[k], b.st[k], function(v){ out.st[k] = !!v; }); });
+    keys(a.notes, b.notes).forEach(function(k){ take('note:'+k, k in a.notes, k in b.notes, a.notes[k], b.notes[k], function(v){ out.notes[k] = String(v||''); }); });
+    take('bw', a.bw!=='' || 'bw' in a.ts, b.bw!=='' || 'bw' in b.ts, a.bw, b.bw, function(v){ out.bw = String(v||''); });
+    return out;
+  }
 
   var data = blank();
   try {
@@ -482,7 +511,8 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   } catch(e){ data = blank(); }
   var st = data.st;
   function persistLocal(){ lsSet(LKEY, JSON.stringify(data)); }
-  function save(){ data.updatedAt = Date.now(); persistLocal(); lsSet(DKEY,'1'); scheduleSync(); }
+  var editSeq = 0;
+  function save(field){ var now = Date.now(); data.updatedAt = now; if(field) data.ts[field] = now; editSeq++; persistLocal(); lsSet(DKEY,'1'); scheduleSync(); }
 
   /* ---------- EDIT LOCK: 2-digit PIN unlocks editing for 10 minutes ----------
      Only stops casual taps from visitors; the PIN is visible in the page source. */
@@ -545,32 +575,53 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     if(!r.ok){ setSync('err','เซิร์ฟเวอร์มีปัญหา · เก็บในเครื่องไว้ก่อน'); return true; }
     return false;
   }
+  // Take merged data from the server; re-render unless the person is typing (then render on blur).
+  var renderLater = false;
+  function adopt(next){
+    if(JSON.stringify(next) === JSON.stringify(data)) return;
+    data = next; st = data.st; persistLocal();
+    var a = document.activeElement;
+    if(a && (a.tagName==='TEXTAREA' || a.tagName==='INPUT')) renderLater = true;
+    else { renderAll(); fillLog(); }
+  }
+  document.addEventListener('focusout', function(){ setTimeout(function(){
+    var a = document.activeElement;
+    if(renderLater && !(a && (a.tagName==='TEXTAREA' || a.tagName==='INPUT'))){ renderLater = false; renderAll(); fillLog(); }
+  }, 0); });
   function push(){
     if(!syncKey() || pushing) return; pushing=true;
-    var sentAt = data.updatedAt, ok = false;
+    var sentSeq = editSeq, ok = false;
     apiFetch(API+'?week='+WEEK, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({data:data})})
-      .then(function(r){ if(handleBad(r)) return; ok = true; if(data.updatedAt === sentAt) lsDel(DKEY); setSync('ok','☁️ ซิงก์แล้ว'); })
+      .then(function(r){
+        if(handleBad(r)) return;
+        return r.json().then(function(j){
+          ok = true; if(editSeq === sentSeq) lsDel(DKEY);
+          if(j && j.data) adopt(merge(data, j.data));   // server returns the merged week
+          setSync('ok','☁️ ซิงก์แล้ว');
+        });
+      })
       .catch(function(){ setSync('offline','ออฟไลน์ · จะซิงก์เมื่อมีเน็ต'); })
       .then(function(){ pushing=false; if(ok && lsGet(DKEY)) scheduleSync(); }); // edits made while saving go up next
   }
-  function pull(){
+  function pull(quiet){
     if(!syncKey()){ setSync('off','บันทึกในเครื่องนี้ · ยังไม่ซิงก์'); return Promise.resolve(); }
-    setSync('busy','กำลังโหลด…');
+    if(pushing) return Promise.resolve();
+    if(!quiet) setSync('busy','กำลังโหลด…');
     return apiFetch(API+'?week='+WEEK).then(function(r){
       if(handleBad(r)) return;
       return r.json().then(function(j){
-        var remote = j.data ? norm(j.data) : null, dirty = !!lsGet(DKEY);
-        if(remote && remote.updatedAt > data.updatedAt && !dirty){
-          data = remote; st = data.st; persistLocal();
-          var a = document.activeElement;
-          if(!(a && (a.tagName==='TEXTAREA' || a.tagName==='INPUT'))){ renderAll(); fillLog(); }
-        }
-        if(dirty || (!remote && data.updatedAt)) push(); else setSync('ok','☁️ ซิงก์แล้ว');
+        if(j.data) adopt(merge(data, j.data));
+        if(lsGet(DKEY) || (!j.data && data.updatedAt)) push(); else setSync('ok','☁️ ซิงก์แล้ว');
       });
     }).catch(function(){ setSync('offline','ออฟไลน์ · ใช้ข้อมูลในเครื่อง'); });
   }
+  // A new week starts on Monday: reload so ticks go into the right week.
+  function weekChanged(){ if(weekIdOf(mondayOf(new Date())) !== WEEK){ location.reload(); return true; } return false; }
   window.addEventListener('online', function(){ lsGet(DKEY) ? push() : pull(); });
-  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') pull(); });
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible' && !weekChanged()) pull(); });
+  window.addEventListener('focus', function(){ if(!weekChanged()) pull(true); });
+  // keep an open screen (e.g. the computer) up to date with edits from other devices
+  setInterval(function(){ if(document.visibilityState==='visible' && !weekChanged()) pull(true); }, 15000);
 
   function fillLog(){ $('bwInput').value = data.bw || ''; }
   function fmtWeek(id){ var p=id.split('-'), d=new Date(+p[0], +p[1]-1, +p[2]), e=new Date(d); e.setDate(d.getDate()+6);
@@ -683,12 +734,12 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       var k = b.dataset.k;
       if(!guard(function(){ var nb0 = document.querySelector('[data-k="'+k+'"]'); if(nb0) nb0.click(); })) return;
       var was = isDone(DAYS[sel]);
-      st[k] = !st[k]; save(); renderAll();
+      st[k] = !st[k]; save('st:'+k); renderAll();
       var nb = document.querySelector('[data-k="'+k+'"]'); if(nb && st[k]) nb.classList.add('pop');
       if(!was && isDone(DAYS[sel])) confetti();
       return;
     }
-    if(b.id === 'doneBtn'){ if(!guard()) return; var w = isDone(DAYS[sel]); st['done-'+sel] = !st['done-'+sel]; save(); renderAll(); if(!w && isDone(DAYS[sel])) confetti(); return; }
+    if(b.id === 'doneBtn'){ if(!guard()) return; var w = isDone(DAYS[sel]); st['done-'+sel] = !st['done-'+sel]; save('st:done-'+sel); renderAll(); if(!w && isDone(DAYS[sel])) confetti(); return; }
     if(b.dataset.rest){ startTimer([{label:'พัก', secs:+b.dataset.rest}]); return; }
     if(b.id === 'roundBtn'){
       var seq=[]; for(var i=1;i<=4;i++){ seq.push({label:'ยก '+i+' · ชก!', secs:180, work:true, sub:'ยก '+i+' / 4'}); if(i<4) seq.push({label:'พักระหว่างยก', secs:60, sub:'ต่อไป ยก '+(i+1)}); }
@@ -701,8 +752,8 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   document.addEventListener('input', function(e){
     var t = e.target;
     if(t.readOnly || !unlocked()) return;
-    if(t.dataset && t.dataset.note !== undefined){ data.notes[t.dataset.note] = t.value; save(); }
-    else if(t.id === 'bwInput'){ data.bw = t.value; save(); }
+    if(t.dataset && t.dataset.note !== undefined){ data.notes[t.dataset.note] = t.value; save('note:'+t.dataset.note); }
+    else if(t.id === 'bwInput'){ data.bw = t.value; save('bw'); }
   });
   $('syncForm').addEventListener('submit', function(e){
     e.preventDefault();
