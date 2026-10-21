@@ -285,12 +285,12 @@ window.IFRANK = (() => {
       <div class="tp" style="${themeStyle(k)}">
         <div class="tp-brand">iFrank</div>
         <div class="tp-tag">Artisanal botanical &amp; terpenes</div>
-        <div class="tp-chips"><span class="tp-chip on">✨ ทั้งหมด</span><span class="tp-chip">💎 Premium</span><span class="tp-chip">🧪 Resin</span></div>
+        <div class="tp-chips"><span class="tp-chip on">✨ ทั้งหมด</span><span class="tp-chip">💎 Premium</span><span class="tp-chip">🍬 Sticky Runtz</span></div>
         <div class="tp-grid">
           ${card(FLAVORS.candy, '🥤🍬', 'Jelly Cola', 'Hybrid-Sativa', '150 ฿', ['new', 'hot'], false)}
           ${card(FLAVORS.fruit, '🍋🫧', 'Lime Soda', 'Hybrid', '150 ฿', ['best'], false)}
           ${card(FLAVORS.cream, '🍓🎂', 'Manzano', 'Hybrid', '150 ฿', ['pick'], false)}
-          ${card(FLAVORS.exotic, '🍇🖤', 'Grape Velvet', 'Live Resin', '700 ฿', [], true)}
+          ${card(FLAVORS.exotic, '🌙🍇', 'Purple Midnight Kush', 'Sticky Runtz', '700 ฿', [], true)}
         </div>
         <div class="tp-cart"><b>2</b><span>300 ฿</span><i>ยืนยันออเดอร์ →</i></div>
       </div>`;
