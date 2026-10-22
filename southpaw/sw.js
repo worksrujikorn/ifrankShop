@@ -1,6 +1,6 @@
 // Offline cache: the app still opens at the gym without internet.
 // Bump VERSION every time you deploy a change so phones pick up the new files.
-const VERSION = 'southpaw-v9';
+const VERSION = 'southpaw-v10';
 const FILES = ['./', './manifest.webmanifest', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

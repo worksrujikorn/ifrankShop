@@ -234,6 +234,14 @@ textarea[readonly],input[readonly]{opacity:.65;cursor:pointer}
 .pin-actions button[type="submit"]{background:var(--fire2);border-color:var(--fire2);color:#fff}
 .card.log{background:var(--surface);border-radius:18px;padding:14px 18px;box-shadow:0 1px 0 var(--line)}
 .log-row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.card.log summary{cursor:pointer;font-family:var(--display);font-style:italic;font-weight:800;font-size:17px}
+.card.log summary small{font-family:var(--body);font-style:normal;font-weight:600;font-size:12px;color:var(--muted);margin-left:6px}
+.card.log[open] summary{margin-bottom:10px}
+.card.log .hint{margin-top:8px}
+.round-step{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.round-step span{font-family:var(--mono);font-weight:600}
+.round-step .btn{padding:8px 14px}
+.round-step .btn:disabled{opacity:.4;cursor:default}
 .log-row label{font-family:var(--display);font-style:italic;font-weight:800;font-size:17px}
 .bw{display:flex;align-items:center;gap:6px;font-weight:600}
 .bw input{width:100px;padding:8px 10px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:16px;font-weight:600;text-align:right}
@@ -535,12 +543,14 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       <button type="button" data-rest="60">1:00</button>
       <button type="button" data-rest="90">1:30</button>
     </div>
-    <section class="card log">
+    <details class="card log">
+      <summary>⚖️ น้ำหนักตัว <small>ไม่บังคับ</small></summary>
       <div class="log-row">
-        <label for="bwInput">⚖️ น้ำหนักตัวสัปดาห์นี้</label>
+        <label for="bwInput">สัปดาห์นี้</label>
         <div class="bw"><input id="bwInput" data-guard type="number" inputmode="decimal" step="0.1" min="30" max="150" placeholder="57.0"><span>kg</span></div>
       </div>
-    </section>
+      <p class="hint">ไม่มีที่ชั่งก็ข้ามได้ ไม่นับเป็นการพลาด</p>
+    </details>
   </section>
   <section class="pane" id="pane-week" hidden></section>
   <section class="pane" id="pane-cal" hidden></section>
@@ -549,6 +559,9 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   <details class="info">
     <summary>รอบนี้เปลี่ยนอะไร</summary>
     <div class="info-body"><ul>
+      <li><b>มวยกระสอบเริ่มยกละ 2:00</b> ครบทุกยกได้สบายๆ แล้วค่อยกด + 15 วิ ไล่ไปจนถึง 3:00</li>
+      <li><b>มวย Shadow เชือก วิ่ง ติ๊กเซตอย่างเดียว</b> ไม่ต้องนับจำนวนหมัด ช่อง kg/ครั้ง เหลือแค่วันเวท</li>
+      <li><b>น้ำหนักตัวไม่บังคับ</b> ไม่มีที่ชั่งก็ข้ามได้</li>
       <li><b>ไม่ได้ WFH แล้ว</b> มวยวันพุธกับ Full Body วันศุกร์ย้ายไปตอนเย็น ใช้เวลา 30–35 นาที</li>
       <li><b>เช้าวันเชือก (จ · พ · ศ)</b> เหลือแค่เชือก 15 นาที</li>
       <li><b>เช้าวันไม่มีเชือก (อ · พฤ)</b> ใช้เล่นเวท หลังกับไหล่ย้ายมาตอนเช้า เย็นว่างหรือ Shadow เบาๆ</li>
@@ -644,7 +657,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       am:ROPE,
       pm:{type:'box', title:'มวย · กระสอบ', time:'30–35 นาที', rounds:true, groups:[
         {part:'Warm-up', tag:'⚡', items:[{n:'หมุนแขน หมุนสะโพก + Shadow', r:'3 นาที', s:1}]},
-        {part:'กระสอบทราย · ยกละ 3 นาที พัก 1 นาที', tag:'R', items:[
+        {part:'กระสอบทราย · ยกละ 2 นาที พัก 1 นาที', tag:'R', round:true, items:[
           {n:'R1 · J-C เร็ว', r:'3:00', s:1},{n:'R2 · J-C-H', r:'3:00', s:1},
           {n:'R3 · Body ซ้าย + Hook ขวา', r:'3:00', s:1},
           {n:'R4 · Free combo', r:'3:00', s:1, note:'เท้าห้ามหยุด · 30 วิสุดท้ายเร่งสุด'}]},
@@ -702,11 +715,23 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   /* ---------- PROGRAM (synced; editable in the app) ----------
      Every exercise has a stable id, so editing the program never moves this week's ticks onto another
      exercise. Default ids are "<group>-<item>", which matches the keys saved before ids existed. */
+  // Boxing rounds: the slot keeps its round length (roundSec), starting at 2:00 and stepped up 15 s at a time
+  // from the app. A group whose items are all "m:ss" is the bag rounds; the length shown comes from roundSec.
+  var ROUND_START = 120, ROUND_MAX = 180, ROUND_STEP = 15;
   function withIds(days){
     days.forEach(function(day){ ['am','pm'].forEach(function(sn){ var sl = day[sn]; if(!sl) return;
-      sl.groups.forEach(function(g,gi){ g.items.forEach(function(it,ii){ if(!it.id) it.id = gi+'-'+ii; }); }); }); });
+      sl.groups.forEach(function(g,gi){ g.items.forEach(function(it,ii){ if(!it.id) it.id = gi+'-'+ii; }); });
+      if(sl.rounds){
+        if(!(+sl.roundSec > 0)) sl.roundSec = ROUND_START;
+        sl.groups.forEach(function(g){ if(g.round === undefined) g.round = g.items.length > 0 && g.items.every(function(it){ return /^\d+:\d\d$/.test(it.r||''); }); });
+      } }); });
     return days;
   }
+  function fmtSec(n){ return Math.floor(n/60)+':'+('0'+n%60).slice(-2); }
+  function logsLoad(sl){ return sl.type === 'str'; } // kg/reps only for weights; punches, rope, shadow and runs are tick-only
+  function repsOf(sl, g, it){ return sl.rounds && g.round ? fmtSec(sl.roundSec) : it.r; }
+  function partOf(sl, g){ return sl.rounds && g.round ? String(g.part||'').replace(/ยกละ\s*[\d:.]+\s*(นาที)?/, 'ยกละ '+fmtSec(sl.roundSec)+' นาที') : g.part; }
+  function roundItems(sl){ var out = []; sl.groups.forEach(function(g){ if(g.round) out = out.concat(g.items); }); return out; }
   var PKEY = 'southpaw-program';
   var progStore = lsJSON(PKEY, null);
   var DAYS = withIds(progStore && progStore.days ? progStore.days : clone(DEFAULT_DAYS));
@@ -1039,11 +1064,11 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     h += '<div class="slot-body">';
     if(slot.note) h += '<p class="slot-note">'+esc(slot.note)+'</p>';
     slot.groups.forEach(function(g){
-      if(g.part) h += '<p class="part">'+esc(g.part)+'</p>';
+      if(g.part) h += '<p class="part">'+esc(partOf(slot, g))+'</p>';
       h += '<div class="group"><div class="gtag">'+esc(g.tag||'')+'</div><div class="rows">';
       g.items.forEach(function(it){
         var ref = day.d+'|'+sn+'|'+it.id;
-        h += '<div class="row"><button type="button" class="name ex" data-ex="'+esc(ref)+'">'+esc(it.n)+' <span class="ex-i">kg · วิธีทำ</span></button><span class="reps">'+(it.s>1?it.s+' × ':'')+esc(it.r)+'</span>';
+        h += '<div class="row"><button type="button" class="name ex" data-ex="'+esc(ref)+'">'+esc(it.n)+' <span class="ex-i">'+(logsLoad(slot)?'kg · ':'')+'วิธีทำ</span></button><span class="reps">'+(it.s>1?it.s+' × ':'')+esc(repsOf(slot, g, it))+'</span>';
         if(it.note) h += '<span class="note">'+esc(it.note)+'</span>';
         h += '<div class="dots">';
         for(var s=0;s<it.s;s++){
@@ -1051,6 +1076,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
           h += '<button type="button" class="dot" data-k="'+k+'" aria-pressed="'+(!!st[k])+'" aria-label="'+esc(it.n)+' เซต '+(s+1)+'">'+(st[k]?'✓':(s+1))+'</button>';
         }
         h += '</div>';
+        if(!logsLoad(slot)){ h += '</div>'; return; }
         var mine = [], any = false;
         for(var s2=0;s2<it.s;s2++){ var v = data.log[setKey(day,sn,it,s2)]; if(v && (v.kg||v.reps)){ any = true; mine.push('<b>'+esc(fmtLog(v))+'</b>'); } }
         if(any) h += '<div class="logline">'+mine.join('')+'</div>';
@@ -1060,7 +1086,15 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       if(g.rest) h += '<button type="button" class="restbtn" data-rest="'+g.rest+'">⏱ พัก '+g.rest+' วิ · กดจับเวลา</button>';
       h += '</div></div>';
     });
-    if(slot.rounds) h += '<button type="button" class="bigbtn" id="roundBtn">🥊 เริ่มจับเวลา 4 ยก (3:00 / พัก 1:00)</button>';
+    if(slot.rounds){
+      var ri = roundItems(slot), rs = slot.roundSec, allIn = ri.length && ri.every(function(it){ return st[setKey(day,sn,it,0)]; });
+      h += '<button type="button" class="bigbtn" id="roundBtn" data-sn="'+sn+'">🥊 เริ่มจับเวลา '+ri.length+' ยก ('+fmtSec(rs)+' / พัก 1:00)</button>';
+      h += '<div class="round-step"><button type="button" class="btn" data-round="-1"'+(rs<=60?' disabled':'')+'>− 15 วิ</button>'+
+           '<span>ยกละ <b>'+fmtSec(rs)+'</b></span><button type="button" class="btn" data-round="1"'+(rs>=ROUND_MAX?' disabled':'')+'>+ 15 วิ</button></div>';
+      h += '<p class="hint">'+(rs >= ROUND_MAX ? 'ถึงเป้า 3:00 แล้ว 🔥'
+        : allIn ? 'ครบ '+ri.length+' ยกที่ '+fmtSec(rs)+' แล้ว 💪 ถ้ายังไหวอยู่ กด + 15 วิ สำหรับครั้งหน้าได้เลย'
+        : 'ต่อยครบทุกยกแบบยังรักษาฟอร์มได้ แล้วค่อยกด + 15 วิ · เป้าหมาย 3:00')+'</p>';
+    }
     h += '</div></article>';
     return h;
   }
@@ -1171,7 +1205,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   }
   function bwChart(weeks){
     var pts = Object.keys(weeks).sort().map(function(w){ return {w:w, v:parseFloat(weeks[w].bw)}; }).filter(function(p){ return p.v > 0; }).slice(-16);
-    if(pts.length < 2) return '<p class="hint">'+(pts.length ? 'ล่าสุด <b>'+pts[0].v+' kg</b> · ใส่น้ำหนักอีกสัปดาห์เพื่อดูกราฟ' : 'ใส่น้ำหนักตัวในหน้ารายวัน แล้วกราฟจะขึ้นที่นี่')+'</p>';
+    if(pts.length < 2) return '<p class="hint">'+(pts.length ? 'ล่าสุด <b>'+pts[0].v+' kg</b> · ใส่น้ำหนักอีกสัปดาห์เพื่อดูกราฟ' : 'ยังไม่มีน้ำหนักตัว (ไม่บังคับ) · มีที่ชั่งเมื่อไหร่ค่อยใส่ในหน้ารายวัน')+'</p>';
     var W = 320, H = 150, L = 34, R = 10, T = 14, B = 24;
     var vs = pts.map(function(p){ return p.v; }), lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs);
     if(hi - lo < 1){ lo -= .5; hi += .5; }
@@ -1266,13 +1300,13 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   function sheetExercise(ref){
     var x = itemByRef(ref); if(!x){ closeSheet(); return null; }
     var it = x.it, prev = lastLog(x.day, x.sn, it), h = '';
-    h += '<div class="ex-meta"><span class="tag">'+esc(x.day.name)+' · '+SLOT_LABEL[x.sn]+'</span><span class="tag mono">'+(it.s>1?it.s+' × ':'')+esc(it.r)+'</span>'+(x.g.rest?'<span class="tag">พัก '+x.g.rest+' วิ</span>':'')+'</div>';
+    h += '<div class="ex-meta"><span class="tag">'+esc(x.day.name)+' · '+SLOT_LABEL[x.sn]+'</span><span class="tag mono">'+(it.s>1?it.s+' × ':'')+esc(repsOf(x.slot, x.g, it))+'</span>'+(x.g.rest?'<span class="tag">พัก '+x.g.rest+' วิ</span>':'')+'</div>';
     if(it.note) h += '<p class="hint" style="margin-bottom:10px">'+esc(it.note)+'</p>';
     h += '<div class="sets">';
     for(var s=0;s<it.s;s++){ var k = setKey(x.day,x.sn,it,s);
-      h += '<div class="setrow t-'+x.slot.type+'"><button type="button" class="dot" data-k="'+k+'" aria-pressed="'+(!!st[k])+'" aria-label="เซต '+(s+1)+'">'+(st[k]?'✓':(s+1))+'</button>'+setInputs(k, prev && prev.sets[s])+'</div>'; }
+      h += '<div class="setrow t-'+x.slot.type+'"><button type="button" class="dot" data-k="'+k+'" aria-pressed="'+(!!st[k])+'" aria-label="เซต '+(s+1)+'">'+(st[k]?'✓':(s+1))+'</button>'+(logsLoad(x.slot) ? setInputs(k, prev && prev.sets[s]) : '')+'</div>'; }
     h += '</div>';
-    h += prev ? '<p class="prev">ครั้งก่อน ('+fmtWeek(prev.week)+'): '+prev.sets.map(function(v){ return '<b>'+esc(fmtLog(v))+'</b>'; }).join(' · ')+'</p>'
+    if(logsLoad(x.slot)) h += prev ? '<p class="prev">ครั้งก่อน ('+fmtWeek(prev.week)+'): '+prev.sets.map(function(v){ return '<b>'+esc(fmtLog(v))+'</b>'; }).join(' · ')+'</p>'
               : '<p class="prev">ยังไม่มีบันทึกครั้งก่อน ใส่ kg กับจำนวนครั้งไว้ สัปดาห์หน้าจะเห็นเทียบกัน</p>';
     h += '<a class="howto" href="'+howtoUrl(it.n)+'" target="_blank" rel="noopener">▶ ดูวิธีทำท่านี้ (YouTube)</a>';
     h += '<div class="btn-row" style="margin-top:14px"><button type="button" class="btn main" data-wo-start="'+x.day.d+'|'+x.sn+'" data-wo-item="'+esc(it.id)+'">▶ เข้าโหมดซ้อมจากท่านี้</button></div>';
@@ -1288,7 +1322,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       h += '<div class="ds-slot"><h5 class="bg-'+sl.type+'"><span>'+SLOT_LABEL[sn]+' · '+esc(sl.title)+'</span><span>'+slotPct(day, sn, s)+'%</span></h5><ul>';
       sl.groups.forEach(function(g){ g.items.forEach(function(it){
         var n = 0, logs = [];
-        for(var i=0;i<it.s;i++){ var k = setKey(day,sn,it,i); if(s[k]) n++; var v = wd && wd.log && wd.log[k]; if(v && (v.kg||v.reps)) logs.push(fmtLog(v)); }
+        for(var i=0;i<it.s;i++){ var k = setKey(day,sn,it,i); if(s[k]) n++; var v = logsLoad(sl) && wd && wd.log && wd.log[k]; if(v && (v.kg||v.reps)) logs.push(fmtLog(v)); }
         h += '<li class="'+(n===it.s?'ok':'')+'">'+esc(it.n)+' · '+n+'/'+it.s+(logs.length?' · <span style="font-family:var(--mono)">'+esc(logs.join(' / '))+'</span>':'')+'</li>';
       }); });
       h += '</ul></div>';
@@ -1410,12 +1444,12 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     var cur = list[wo.i], it = cur.it, k = setKey(cur.day,cur.sn,it,cur.s), prev = lastLog(cur.day, cur.sn, it), on = !!st[k];
     var pips = ''; for(var s=0;s<it.s;s++) pips += '<i class="'+(st[setKey(cur.day,cur.sn,it,s)]?'on':'')+(s===cur.s?' cur':'')+'"></i>';
     h += '<div class="wo-card t-'+sl.type+'">'+
-      '<span class="wo-kick">'+(cur.g.part ? esc(cur.g.part)+' · ' : '')+'กลุ่ม '+esc(cur.g.tag||'')+(cur.g.rest?' · พัก '+cur.g.rest+' วิ':'')+'</span>'+
+      '<span class="wo-kick">'+(cur.g.part ? esc(partOf(sl, cur.g))+' · ' : '')+'กลุ่ม '+esc(cur.g.tag||'')+(cur.g.rest?' · พัก '+cur.g.rest+' วิ':'')+'</span>'+
       '<h2 class="wo-name">'+esc(it.n)+'</h2>'+
-      '<div class="wo-set"><b>เซต '+(cur.s+1)+'/'+it.s+'</b><span>'+esc(it.r)+'</span><div class="wo-pips">'+pips+'</div></div>'+
+      '<div class="wo-set"><b>เซต '+(cur.s+1)+'/'+it.s+'</b><span>'+esc(repsOf(sl, cur.g, it))+'</span><div class="wo-pips">'+pips+'</div></div>'+
       (it.note ? '<p class="hint">'+esc(it.note)+'</p>' : '')+
-      '<div class="setrow" style="grid-template-columns:1fr 1fr">'+setInputs(k, prev && prev.sets[cur.s])+'</div>'+
-      (prev && prev.sets[cur.s] ? '<p class="prev" style="margin:0">ครั้งก่อนเซตนี้: <b>'+esc(fmtLog(prev.sets[cur.s]))+'</b></p>' : '')+
+      (logsLoad(sl) ? '<div class="setrow" style="grid-template-columns:1fr 1fr">'+setInputs(k, prev && prev.sets[cur.s])+'</div>' : '')+
+      (logsLoad(sl) && prev && prev.sets[cur.s] ? '<p class="prev" style="margin:0">ครั้งก่อนเซตนี้: <b>'+esc(fmtLog(prev.sets[cur.s]))+'</b></p>' : '')+
       '<button type="button" class="wo-done'+(on?' undo':'')+'" data-wo="done">'+(on?'↺ ยกเลิกติ๊กเซตนี้':'✓ เสร็จเซตนี้')+'</button>'+
       '<a class="howto" href="'+howtoUrl(it.n)+'" target="_blank" rel="noopener" style="margin-top:0">▶ ดูวิธีทำ</a></div>';
     h += '<div class="wo-nav"><button type="button" class="btn" data-wo="prev"'+(wo.i?'':' disabled')+'>‹ ก่อนหน้า</button><button type="button" class="btn" data-wo="next">ข้าม ›</button></div>';
@@ -1634,8 +1668,16 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     }
     if(b.dataset.rest){ startTimer([{label:'พัก', secs:+b.dataset.rest}]); return; }
     if(b.id === 'roundBtn'){
-      var sq=[]; for(var i=1;i<=4;i++){ sq.push({label:'ยก '+i+' · ชก!', secs:180, work:true, sub:'ยก '+i+' / 4'}); if(i<4) sq.push({label:'พักระหว่างยก', secs:60, sub:'ต่อไป ยก '+(i+1)}); }
+      var rsl = DAYS[sel][b.dataset.sn], rn = roundItems(rsl).length, sq=[];
+      for(var i=1;i<=rn;i++){ sq.push({label:'ยก '+i+' · ชก!', secs:rsl.roundSec, work:true, sub:'ยก '+i+' / '+rn}); if(i<rn) sq.push({label:'พักระหว่างยก', secs:60, sub:'ต่อไป ยก '+(i+1)}); }
       startTimer(sq); return;
+    }
+    if(b.dataset.round){
+      if(!guard()) return;
+      var rday = DAYS[sel], rsn = rday.am && rday.am.rounds ? 'am' : 'pm', rs2 = rday[rsn];
+      rs2.roundSec = Math.max(60, Math.min(ROUND_MAX, rs2.roundSec + (+b.dataset.round)*ROUND_STEP));
+      progAt = Date.now(); storeProgram(); pushProgram(); buzz(15); renderAll();
+      return;
     }
     if(b.id === 'dockStop'){ stopTimer(); return; }
     if(b.id === 'dockAdd'){ addTime(15); return; }
