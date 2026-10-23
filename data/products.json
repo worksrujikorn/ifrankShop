@@ -36,16 +36,16 @@
   ],
   "products": [
     {
-      "id": "vice-city",
-      "name": "Vice City",
-      "emoji": "🌴🌆",
+      "id": "spritz",
+      "name": "Spritz",
+      "emoji": "🍹🫧",
       "category": "homegrow",
-      "strain": "Hybrid",
+      "strain": "Sativa-Hybrid",
       "lineage": "",
-      "flavor": "candy",
-      "terp": "tropical candy, sweet citrus, light gas",
-      "effect": "อารมณ์ดี ลอยเบา ชิลล์",
-      "feel": "ไวบ์ไมอามี่ยามค่ำ — หวานเขตร้อน สนุกทุกคืน",
+      "flavor": "fruit",
+      "terp": "sparkling citrus, orange zest, light floral fizz",
+      "effect": "สดชื่น ซ่า อารมณ์ดี",
+      "feel": "ค็อกเทลส้มซ่ายามบ่าย — สดใส เบาสบาย",
       "prices": [
         {
           "label": "1g",
@@ -61,59 +61,14 @@
       "terpenes": [
         {
           "key": "limonene",
-          "level": 70
-        },
-        {
-          "key": "ocimene",
-          "level": 55
-        },
-        {
-          "key": "caryophyllene",
-          "level": 40
-        }
-      ],
-      "profile": {
-        "citrus": 3,
-        "floral": 2,
-        "earthy": 1,
-        "gas": 2,
-        "sweet": 4,
-        "berry": 2
-      }
-    },
-    {
-      "id": "orange-juice",
-      "name": "Orange Juice",
-      "emoji": "🍊🧃",
-      "category": "homegrow",
-      "strain": "Sativa-Hybrid",
-      "lineage": "",
-      "flavor": "fruit",
-      "terp": "fresh orange, citrus zest, sweet juice",
-      "effect": "สดชื่น กระปรี้กระเปร่า โฟกัสดี",
-      "feel": "น้ำส้มคั้นสด — sativa กลางวันสดใส",
-      "prices": [
-        {
-          "label": "1g",
-          "price": 80
-        }
-      ],
-      "badges": [
-        "new"
-      ],
-      "soldOut": false,
-      "hidden": false,
-      "terpenes": [
-        {
-          "key": "limonene",
-          "level": 90
+          "level": 85
         },
         {
           "key": "terpinolene",
           "level": 50
         },
         {
-          "key": "myrcene",
+          "key": "ocimene",
           "level": 40
         }
       ],
@@ -123,20 +78,65 @@
         "earthy": 1,
         "gas": 1,
         "sweet": 3,
-        "berry": 0
+        "berry": 1
       }
     },
     {
-      "id": "cereal-milk",
-      "name": "Cereal Milk",
-      "emoji": "🥣🥛",
+      "id": "passion-fruit",
+      "name": "Passion Fruit",
+      "emoji": "💛🥭",
+      "category": "homegrow",
+      "strain": "Sativa",
+      "lineage": "",
+      "flavor": "fruit",
+      "terp": "tangy passion fruit, tropical sweet, citrus tart",
+      "effect": "ตื่นตัว พลังงานดี ครีเอทีฟ",
+      "feel": "เสาวรสเปรี้ยวอมหวาน — ทรอปิคอลกลางวัน",
+      "prices": [
+        {
+          "label": "1g",
+          "price": 80
+        }
+      ],
+      "badges": [
+        "new"
+      ],
+      "soldOut": false,
+      "hidden": false,
+      "terpenes": [
+        {
+          "key": "terpinolene",
+          "level": 75
+        },
+        {
+          "key": "limonene",
+          "level": 60
+        },
+        {
+          "key": "myrcene",
+          "level": 40
+        }
+      ],
+      "profile": {
+        "citrus": 4,
+        "floral": 2,
+        "earthy": 1,
+        "gas": 1,
+        "sweet": 4,
+        "berry": 2
+      }
+    },
+    {
+      "id": "london-jelly",
+      "name": "London Jelly",
+      "emoji": "🇬🇧🍬",
       "category": "homegrow",
       "strain": "Hybrid",
       "lineage": "",
-      "flavor": "cream",
-      "terp": "sweet cereal, creamy milk, vanilla cookie",
+      "flavor": "candy",
+      "terp": "sweet jelly candy, berry, creamy cake",
       "effect": "ผ่อนคลาย บาลานซ์ดี อารมณ์ดี",
-      "feel": "ซีเรียลนมเย็น — หวานครีมนุ่มทุกคำ",
+      "feel": "เยลลี่หวานสไตล์ลอนดอน — นุ่ม หวาน ละมุน",
       "prices": [
         {
           "label": "1g",
@@ -151,11 +151,56 @@
       "terpenes": [
         {
           "key": "caryophyllene",
-          "level": 70
+          "level": 65
         },
         {
           "key": "limonene",
-          "level": 50
+          "level": 55
+        },
+        {
+          "key": "linalool",
+          "level": 35
+        }
+      ],
+      "profile": {
+        "citrus": 2,
+        "floral": 2,
+        "earthy": 1,
+        "gas": 2,
+        "sweet": 5,
+        "berry": 3
+      }
+    },
+    {
+      "id": "black-jelly",
+      "name": "Black Jelly",
+      "emoji": "🖤🍇",
+      "category": "homegrow",
+      "strain": "Indica-Hybrid",
+      "lineage": "",
+      "flavor": "berry",
+      "terp": "dark grape jelly, black berry, sweet gas",
+      "effect": "ผ่อนคลายลึก body หนัก หลับสบาย",
+      "feel": "เยลลี่องุ่นดำเข้มข้น — ปิดคืนแบบนุ่มหนัก",
+      "prices": [
+        {
+          "label": "1g",
+          "price": 80
+        }
+      ],
+      "badges": [
+        "new"
+      ],
+      "soldOut": false,
+      "hidden": false,
+      "terpenes": [
+        {
+          "key": "myrcene",
+          "level": 85
+        },
+        {
+          "key": "caryophyllene",
+          "level": 55
         },
         {
           "key": "linalool",
@@ -164,24 +209,24 @@
       ],
       "profile": {
         "citrus": 1,
-        "floral": 2,
-        "earthy": 1,
-        "gas": 1,
-        "sweet": 5,
-        "berry": 1
+        "floral": 1,
+        "earthy": 2,
+        "gas": 3,
+        "sweet": 4,
+        "berry": 5
       }
     },
     {
-      "id": "death-of-boof",
-      "name": "Death of Boof",
-      "emoji": "💀💨",
+      "id": "truffle-cake",
+      "name": "Truffle Cake",
+      "emoji": "🍫🎂",
       "category": "homegrow",
-      "strain": "Indica-Hybrid",
+      "strain": "Indica",
       "lineage": "",
-      "flavor": "gas",
-      "terp": "heavy gas, earthy funk, dark berry",
-      "effect": "body heavy ผ่อนคลายลึก",
-      "feel": "gas หนักแน่น funk เข้ม — สายปิดคืน",
+      "flavor": "cream",
+      "terp": "chocolate truffle, vanilla cake, earthy spice",
+      "effect": "ผ่อนคลาย ชิลล์ ง่วงสบาย",
+      "feel": "เค้กช็อกโกแลตทรัฟเฟิล — หวานเข้ม ลึก นุ่มนาน",
       "prices": [
         {
           "label": "1g",
@@ -196,11 +241,11 @@
       "terpenes": [
         {
           "key": "caryophyllene",
-          "level": 85
+          "level": 80
         },
         {
           "key": "myrcene",
-          "level": 70
+          "level": 60
         },
         {
           "key": "humulene",
@@ -211,54 +256,9 @@
         "citrus": 0,
         "floral": 1,
         "earthy": 4,
-        "gas": 5,
-        "sweet": 1,
-        "berry": 2
-      }
-    },
-    {
-      "id": "lemon-cherry",
-      "name": "Lemon Cherry",
-      "emoji": "🍋🍒",
-      "category": "homegrow",
-      "strain": "Hybrid",
-      "lineage": "",
-      "flavor": "berry",
-      "terp": "sour lemon, sweet cherry, candy gas",
-      "effect": "euphoric อารมณ์ขึ้น ลอยเบา",
-      "feel": "เชอร์รี่ตัดมะนาวเปรี้ยวหวาน — กลิ่นติดมือ",
-      "prices": [
-        {
-          "label": "1g",
-          "price": 80
-        }
-      ],
-      "badges": [
-        "new"
-      ],
-      "soldOut": false,
-      "hidden": false,
-      "terpenes": [
-        {
-          "key": "limonene",
-          "level": 80
-        },
-        {
-          "key": "caryophyllene",
-          "level": 50
-        },
-        {
-          "key": "linalool",
-          "level": 35
-        }
-      ],
-      "profile": {
-        "citrus": 4,
-        "floral": 1,
-        "earthy": 1,
-        "gas": 2,
+        "gas": 3,
         "sweet": 4,
-        "berry": 4
+        "berry": 1
       }
     },
     {
