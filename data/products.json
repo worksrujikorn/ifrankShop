@@ -266,12 +266,12 @@
       "name": "Manzano",
       "emoji": "🍏✨",
       "category": "premium",
-      "strain": "Hybrid",
+      "strain": "Indica-Hybrid",
       "lineage": "",
       "flavor": "fruit",
       "terp": "crisp green apple, sour candy, light gas",
-      "effect": "สดชื่น อารมณ์ดี บาลานซ์",
-      "feel": "แอปเปิ้ลเขียวกรอบเปรี้ยวซ่า — สดทุกสูด",
+      "effect": "ผ่อนคลาย body นุ่ม ชิลล์ยาว",
+      "feel": "แอปเปิ้ลเขียวเปรี้ยวซ่า — หอมสดแต่ตัวหนัก ชิลล์ยามค่ำ",
       "prices": [
         {
           "label": "1g",
@@ -286,16 +286,16 @@
       "hidden": false,
       "terpenes": [
         {
-          "key": "limonene",
+          "key": "myrcene",
           "level": 75
         },
         {
-          "key": "caryophyllene",
-          "level": 50
+          "key": "limonene",
+          "level": 60
         },
         {
-          "key": "ocimene",
-          "level": 40
+          "key": "caryophyllene",
+          "level": 45
         }
       ],
       "profile": {
@@ -312,12 +312,12 @@
       "name": "Bling Blaow",
       "emoji": "💎💥",
       "category": "premium",
-      "strain": "Hybrid",
+      "strain": "Indica",
       "lineage": "",
       "flavor": "gas",
       "terp": "sweet candy, loud gas, creamy citrus",
-      "effect": "เคลิ้ม ลอย อารมณ์ดีเต็มที่",
-      "feel": "กลิ่นดังระดับเพชร — หวานแก๊สแรงจัด",
+      "effect": "หนัก ลึก เคลิ้ม ติดโซฟา",
+      "feel": "กลิ่นดังระดับเพชร — หวานแก๊สแรง ตัวหนักจัดเต็ม",
       "prices": [
         {
           "label": "1g",
@@ -332,16 +332,16 @@
       "hidden": false,
       "terpenes": [
         {
-          "key": "caryophyllene",
-          "level": 80
-        },
-        {
-          "key": "limonene",
-          "level": 60
-        },
-        {
           "key": "myrcene",
-          "level": 45
+          "level": 85
+        },
+        {
+          "key": "caryophyllene",
+          "level": 75
+        },
+        {
+          "key": "linalool",
+          "level": 40
         }
       ],
       "profile": {
@@ -358,12 +358,12 @@
       "name": "Cherry Smash",
       "emoji": "🍒💥",
       "category": "premium",
-      "strain": "Indica-Hybrid",
+      "strain": "Indica",
       "lineage": "",
       "flavor": "berry",
       "terp": "smashed black cherry, sweet berry, soft gas",
-      "effect": "ผ่อนคลายลึก body นุ่ม หลับสบาย",
-      "feel": "เชอร์รี่บดเข้มข้น — หวานฉ่ำ ปิดคืนแบบนุ่ม",
+      "effect": "ผ่อนคลายลึก body หนัก หลับสบาย",
+      "feel": "เชอร์รี่บดเข้มข้น — หวานฉ่ำ ปิดคืนแบบหลับลึก",
       "prices": [
         {
           "label": "1g",
@@ -378,15 +378,15 @@
       "terpenes": [
         {
           "key": "myrcene",
-          "level": 80
-        },
-        {
-          "key": "caryophyllene",
-          "level": 55
+          "level": 90
         },
         {
           "key": "linalool",
-          "level": 40
+          "level": 55
+        },
+        {
+          "key": "caryophyllene",
+          "level": 50
         }
       ],
       "profile": {
