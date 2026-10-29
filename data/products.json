@@ -262,6 +262,143 @@
       }
     },
     {
+      "id": "manzano",
+      "name": "Manzano",
+      "emoji": "🍏✨",
+      "category": "premium",
+      "strain": "Hybrid",
+      "lineage": "",
+      "flavor": "fruit",
+      "terp": "crisp green apple, sour candy, light gas",
+      "effect": "สดชื่น อารมณ์ดี บาลานซ์",
+      "feel": "แอปเปิ้ลเขียวกรอบเปรี้ยวซ่า — สดทุกสูด",
+      "prices": [
+        {
+          "label": "1g",
+          "price": 150
+        }
+      ],
+      "badges": [
+        "new",
+        "topshelf"
+      ],
+      "soldOut": false,
+      "hidden": false,
+      "terpenes": [
+        {
+          "key": "limonene",
+          "level": 75
+        },
+        {
+          "key": "caryophyllene",
+          "level": 50
+        },
+        {
+          "key": "ocimene",
+          "level": 40
+        }
+      ],
+      "profile": {
+        "citrus": 3,
+        "floral": 2,
+        "earthy": 1,
+        "gas": 2,
+        "sweet": 4,
+        "berry": 2
+      }
+    },
+    {
+      "id": "bling-blaow",
+      "name": "Bling Blaow",
+      "emoji": "💎💥",
+      "category": "premium",
+      "strain": "Hybrid",
+      "lineage": "",
+      "flavor": "gas",
+      "terp": "sweet candy, loud gas, creamy citrus",
+      "effect": "เคลิ้ม ลอย อารมณ์ดีเต็มที่",
+      "feel": "กลิ่นดังระดับเพชร — หวานแก๊สแรงจัด",
+      "prices": [
+        {
+          "label": "1g",
+          "price": 150
+        }
+      ],
+      "badges": [
+        "new",
+        "hot"
+      ],
+      "soldOut": false,
+      "hidden": false,
+      "terpenes": [
+        {
+          "key": "caryophyllene",
+          "level": 80
+        },
+        {
+          "key": "limonene",
+          "level": 60
+        },
+        {
+          "key": "myrcene",
+          "level": 45
+        }
+      ],
+      "profile": {
+        "citrus": 2,
+        "floral": 1,
+        "earthy": 2,
+        "gas": 5,
+        "sweet": 4,
+        "berry": 1
+      }
+    },
+    {
+      "id": "cherry-smash",
+      "name": "Cherry Smash",
+      "emoji": "🍒💥",
+      "category": "premium",
+      "strain": "Indica-Hybrid",
+      "lineage": "",
+      "flavor": "berry",
+      "terp": "smashed black cherry, sweet berry, soft gas",
+      "effect": "ผ่อนคลายลึก body นุ่ม หลับสบาย",
+      "feel": "เชอร์รี่บดเข้มข้น — หวานฉ่ำ ปิดคืนแบบนุ่ม",
+      "prices": [
+        {
+          "label": "1g",
+          "price": 150
+        }
+      ],
+      "badges": [
+        "new"
+      ],
+      "soldOut": false,
+      "hidden": false,
+      "terpenes": [
+        {
+          "key": "myrcene",
+          "level": 80
+        },
+        {
+          "key": "caryophyllene",
+          "level": 55
+        },
+        {
+          "key": "linalool",
+          "level": 40
+        }
+      ],
+      "profile": {
+        "citrus": 1,
+        "floral": 2,
+        "earthy": 1,
+        "gas": 2,
+        "sweet": 4,
+        "berry": 5
+      }
+    },
+    {
       "id": "mango-sunrise",
       "name": "Sunburst Haze",
       "emoji": "☀️🍋",
