@@ -2,7 +2,8 @@
 // Same env vars as api/southpaw.mjs (MONGODB_URI, SOUTHPAW_KEY).
 //
 // POST /api/southpaw-health        (needs x-southpaw-key, or an edit token from the PIN)
-//   nightly iOS Shortcut: { "date":"2026-10-30", "steps":12345, "km":8.4, "active":420, "exmin":35, "rhr":61, "hrv":44,
+//   nightly iOS Shortcut: { "date":"2026-10-30", "steps":12345, "km":8.4, "active":420, "basal":1050, "exmin":35, "standh":11,
+//                           "flights":18, "daylight":37, "wspeed":4.0, "walkhr":94, "rhr":61, "hrv":44, "spo2":97, "resp":15, "sleep":6.5,
 //                           "workouts":[{ "type":"Jump Rope", "start":"06:26", "min":15, "kcal":94 }] }
 //   bulk import:          { "days": { "2026-10-30": {...} }, "workouts": [ { "date":"2026-10-30", ... } ] }
 //   A workout seen for the first time this week or last week ticks the matching slot in the program
@@ -13,7 +14,7 @@ import { HAS_DB, col, mergeWeek, bangkokNow } from './_southpaw-db.mjs';
 
 const SECRET = process.env.SOUTHPAW_KEY || '';
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
-const METRICS = ['steps', 'km', 'active', 'exmin', 'rhr', 'hrv', 'sleep', 'weight'];
+const METRICS = ['steps', 'km', 'active', 'basal', 'exmin', 'standh', 'standmin', 'flights', 'daylight', 'wspeed', 'walkhr', 'rhr', 'hrv', 'spo2', 'resp', 'sleep', 'weight'];
 // which program slot a watch workout fills, in order of preference, and the minutes it needs
 const SLOT_FOR = {
   JumpRope: { t: ['rope', 'cardio'], min: 8 },
@@ -64,6 +65,7 @@ function normType(t) {
 function cleanMetrics(o) {
   const out = {};
   for (const k of METRICS) { const v = num(o[k]); if (v !== undefined && v >= 0) out[k] = Math.round(v * 10) / 10; }
+  if (out.spo2 !== undefined && out.spo2 <= 1.5) out.spo2 = Math.round(out.spo2 * 1000) / 10; // 0.97 → 97
   return out;
 }
 function cleanWorkout(w, fallbackDay) {

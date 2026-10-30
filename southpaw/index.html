@@ -489,6 +489,41 @@ body.has-dock .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
   .ed-item{grid-template-columns:1fr 70px 52px 34px}
 }
 /* ---------- APPLE WATCH (health sync) ---------- */
+.hl-panel{margin-top:4px}
+.hl-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.hl-sd{border:0;cursor:pointer;background:var(--bg);border-radius:12px;padding:8px 2px 6px;display:grid;justify-items:center;gap:3px;color:var(--ink);font:inherit}
+.hl-sd:disabled{cursor:default;opacity:.55}
+.hl-sd b{font-family:var(--mono);font-size:12px;font-weight:600}
+.hl-sd small{font-size:11px;color:var(--muted)}
+.hl-sb{width:12px;height:44px;border-radius:6px;background:var(--line);display:flex;align-items:flex-end;overflow:hidden}
+.hl-sb i{display:block;width:100%;border-radius:6px;background:var(--orange);opacity:.55}
+.hl-sd.hit .hl-sb i{background:var(--green);opacity:1}
+.hl-sd.on{box-shadow:inset 0 0 0 2px var(--fire2)}
+.hl-sd.on .hl-sb i{opacity:1}
+.hl-sd:focus-visible{outline:3px solid var(--volt);outline-offset:2px}
+.hl-panel .hl-day{margin:12px 0 6px}
+.hl-ready{border-radius:14px;padding:10px 12px;display:grid;gap:2px;margin-bottom:10px}
+.hl-ready b{font-size:14.5px}
+.hl-ready small{font-size:12.5px;opacity:.85}
+.hl-ready.good{background:var(--green-soft);color:var(--green)}
+.hl-ready.ok{background:var(--blue-soft);color:var(--blue)}
+.hl-ready.warn{background:var(--orange-soft);color:var(--orange)}
+.hl-goals{display:grid;gap:10px;margin-bottom:10px}
+.hl-goal-t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13.5px;font-weight:600}
+.hl-goal-t b{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.hl-goal-t small{font-weight:500;color:var(--muted)}
+.hl-track{height:10px;border-radius:999px;background:var(--bg);overflow:hidden;margin-top:4px}
+.hl-track i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--fire2),var(--sun))}
+.hl-track i.full{background:var(--green)}
+.hl-cal{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.hl-cal > div{background:var(--bg);border-radius:14px;padding:10px 12px;display:grid;gap:1px;min-width:0}
+.hl-cal small{font-size:11.5px;color:var(--muted)}
+.hl-cal b{font-family:var(--mono);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.hl-cal b span{font-size:12px;color:var(--muted)}
+.hl-cal b.down{color:var(--green)}
+.hl-cal b.up{color:var(--orange)}
+.hl-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.hl-i{font-size:16px}
 .hl-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
 .hl-day{grid-column:1/-1;margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .hl-s{background:var(--bg);border-radius:14px;padding:10px 6px;text-align:center;display:grid;gap:1px;min-width:0}
@@ -570,6 +605,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       <span><i class="c-cardio"></i>วิ่ง</span><span><i class="c-rest"></i>พัก / ไม่บังคับ</span>
     </div>
     <section id="view" class="wrap" style="gap:14px"></section>
+    <section class="panel hl-panel" id="hlPanel" aria-label="ข้อมูลสุขภาพจาก Apple Watch"></section>
     <div class="quick" aria-label="จับเวลาพัก">
       <span>จับเวลาพักเร็ว:</span>
       <button type="button" data-rest="45">0:45</button>
@@ -1282,7 +1318,6 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       '<div class="tile"><b>'+daysDone+'</b><small>วันที่ซ้อมครบ</small></div>'+
       '<div class="tile"><b>'+sets+'</b><small>เซตทั้งหมด</small></div>'+
       '<div class="tile"><b>'+ids.filter(function(w){ return weeks[w].updatedAt; }).length+'</b><small>สัปดาห์ที่บันทึก</small></div></div>';
-    h += healthPanel();
     h += '<div class="panel"><div class="panel-h"><h3>⚖️ น้ำหนักตัว</h3></div>'+bwChart(weeks)+'</div>';
     h += '<div class="panel"><div class="panel-h"><h3>🗓 16 สัปดาห์ล่าสุด</h3></div>'+heatmap(weeks)+
       '<div class="cal-legend"><span><i class="sw-done"></i>ซ้อมครบ</span><span><i class="sw-part"></i>บางส่วน</span><span><i class="sw-miss"></i>พลาด</span></div></div>';
@@ -1302,7 +1337,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
   function renderPane(){
     PANES.forEach(function(p){ $('pane-'+p).hidden = p !== pane; });
     document.querySelectorAll('#seg button').forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.pane === pane)); });
-    if(pane === 'day'){ renderTabs(); renderView(); }
+    if(pane === 'day'){ renderTabs(); renderView(); renderHealth(); }
     else if(pane === 'week') renderWeek();
     else if(pane === 'cal') renderCal();
     else renderStats();
@@ -1830,28 +1865,66 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     }).catch(function(){}).then(function(){ hlLoading = false; });
   }
   function hlAgo(ts){ var m=Math.round((Date.now()-ts)/60000); if(m<60) return m+' นาทีที่แล้ว'; var h=Math.round(m/60); if(h<24) return h+' ชม.ที่แล้ว'; return Math.round(h/24)+' วันที่แล้ว'; }
-  function healthPanel(){
-    if(!HL) return '';
+  var hlSel = '';
+  var HL_GOAL = {steps:10000, active:400, exmin:30, standh:12};
+  function hlNum(v, d){ return v===undefined||v===null ? '–' : (d ? (+v).toFixed(d) : Math.round(v).toLocaleString('en-US')); }
+  // average of the 28 days before a date, so "today" is compared with this person's own normal
+  function hlBase(key, id){ var vals=[]; for(var i=1;i<=28;i++){ var x=(HL.days||{})[weekIdOf(addDays(parseWeek(id),-i))]; if(x && x[key]!==undefined) vals.push(x[key]); }
+    return vals.length>=5 ? vals.reduce(function(a,b){ return a+b; },0)/vals.length : null; }
+  function hlReady(id, v){
+    if(v.rhr===undefined && v.hrv===undefined) return null;
+    var br = hlBase('rhr', id), bh = hlBase('hrv', id); if(br===null && bh===null) return null;
+    var r = v.rhr!==undefined && br!==null ? v.rhr-br : 0, hv = v.hrv!==undefined && bh!==null ? v.hrv/bh : 1;
+    var note = [];
+    if(v.rhr!==undefined && br!==null) note.push('ชีพจรพัก '+Math.round(v.rhr)+' (ปกติ ~'+Math.round(br)+')');
+    if(v.hrv!==undefined && bh!==null) note.push('HRV '+Math.round(v.hrv)+' ms (ปกติ ~'+Math.round(bh)+')');
+    if(r >= 3 || hv <= 0.85) return {cls:'warn', t:'😮‍💨 ร่างกายล้ากว่าปกติ · วันนี้ซ้อมเบาลงหรือพักได้', n:note.join(' · ')};
+    if(r <= -1 && hv >= 1) return {cls:'good', t:'💪 ฟื้นตัวดี · พร้อมซ้อมเต็มที่', n:note.join(' · ')};
+    return {cls:'ok', t:'👍 ปกติ · ซ้อมตามแผนได้', n:note.join(' · ')};
+  }
+  function hlGoal(label, val, goal, unit){ var pct = val===undefined ? 0 : Math.min(100, val/goal*100);
+    return '<div class="hl-goal"><div class="hl-goal-t"><span>'+label+'</span><b>'+hlNum(val)+'<small> / '+goal.toLocaleString('en-US')+' '+unit+'</small></b></div>'+
+      '<div class="hl-track"><i style="width:'+pct.toFixed(0)+'%"'+(pct>=100?' class="full"':'')+'></i></div></div>'; }
+  function renderHealth(){
+    var box = $('hlPanel'); if(!box || !HL) return;
     var todayId = weekIdOf(new Date()), yId = weekIdOf(addDays(new Date(),-1));
     var ids = Object.keys(HL.days||{}).filter(function(d){ return d<=todayId; }).sort();
-    var head = '<div class="panel-h"><h3>⌚ Apple Watch<small>'+(HL.updatedAt ? 'อัปเดต '+hlAgo(HL.updatedAt) : 'ยังไม่มีข้อมูล · ตั้ง Shortcut ตามคู่มือ')+'</small></h3></div>';
-    if(!ids.length && !(HL.workouts||[]).length) return '<div class="panel">'+head+'<p class="hint">เมื่อ iPhone ส่งข้อมูลมา จะเห็นก้าวเดิน kcal ชีพจร และ Workout ที่นี่ และช่องเชือก/วิ่ง/เวท/มวยจะติ๊กให้เอง</p></div>';
-    var last = ids[ids.length-1], v = last ? HL.days[last] : {};
-    var lbl = !last ? '' : last===todayId ? 'วันนี้' : last===yId ? 'เมื่อวาน' : parseWeek(last).getDate()+'/'+(parseWeek(last).getMonth()+1);
-    function stat(val, unit, name){ return '<div class="hl-s"><b>'+(val===undefined||val===null?'–':val)+'</b><span>'+unit+'</span><small>'+name+'</small></div>'; }
-    var h = '<div class="panel">'+head+'<div class="hl-stats"><p class="hl-day">'+lbl+'</p>'+
-      stat(v.steps!==undefined?Math.round(v.steps).toLocaleString('en-US'):undefined,'ก้าว','เดิน')+
-      stat(v.km,'กม.','ระยะเดิน/วิ่ง')+
-      stat(v.active!==undefined?Math.round(v.active):undefined,'kcal','เผาผลาญ')+
-      stat(v.exmin!==undefined?Math.round(v.exmin):undefined,'นาที','ออกกำลังกาย')+
-      stat(v.rhr!==undefined?Math.round(v.rhr):undefined,'bpm','ชีพจรขณะพัก')+'</div>';
+    var head = '<div class="panel-h"><h3>⌚ Apple Watch<small>'+(HL.updatedAt ? 'อัปเดต '+hlAgo(HL.updatedAt) : 'ยังไม่มีข้อมูล')+'</small></h3></div>';
+    if(!ids.length && !(HL.workouts||[]).length){
+      box.innerHTML = head+'<p class="hint">เมื่อ iPhone ส่งข้อมูลมา จะเห็นก้าวเดิน kcal ชีพจร การฟื้นตัว และ Workout ที่นี่ · นำเข้าข้อมูลย้อนหลังได้ที่ ⚙️ ตั้งค่า → ⌚ Apple Watch</p>'; return; }
+    if(!hlSel || !HL.days[hlSel]) hlSel = ids[ids.length-1];
+    var id = hlSel, v = HL.days[id] || {}, d0 = parseWeek(id);
+    var lbl = id===todayId ? 'วันนี้' : id===yId ? 'เมื่อวาน' : HL_DAY[d0.getDay()]+' '+d0.getDate()+'/'+(d0.getMonth()+1);
+    var h = head;
+    // last 7 days: steps per day, tap to see that day
+    var strip = [], mx = 1;
+    for(var i=6;i>=0;i--){ var di = weekIdOf(addDays(new Date(),-i)), dv = HL.days[di] || {}; strip.push({id:di, v:dv}); if(dv.steps > mx) mx = dv.steps; }
+    h += '<div class="hl-strip" role="tablist" aria-label="เลือกวัน">'+strip.map(function(x){
+      var dd = parseWeek(x.id), pct = x.v.steps ? Math.max(6, x.v.steps/mx*100) : 0;
+      return '<button type="button" role="tab" class="hl-sd'+(x.id===id?' on':'')+(x.v.steps>=HL_GOAL.steps?' hit':'')+'" data-hl-day="'+x.id+'" aria-selected="'+(x.id===id)+'"'+(x.v.steps?'':' disabled')+'>'+
+        '<span class="hl-sb"><i style="height:'+pct.toFixed(0)+'%"></i></span><b>'+(x.v.steps ? (x.v.steps/1000).toFixed(1)+'k' : '–')+'</b><small>'+(x.id===todayId?'วันนี้':HL_DAY[dd.getDay()])+'</small></button>';
+    }).join('')+'</div>';
+    h += '<p class="hl-day">'+lbl+'</p>';
+    var rd = hlReady(id, v);
+    if(rd) h += '<div class="hl-ready '+rd.cls+'"><b>'+rd.t+'</b>'+(rd.n ? '<small>'+esc(rd.n)+'</small>' : '')+'</div>';
+    h += '<div class="hl-goals">'+hlGoal('🚶 ก้าวเดิน', v.steps, HL_GOAL.steps, 'ก้าว')+hlGoal('🔥 kcal จากการขยับ', v.active, HL_GOAL.active, 'kcal')+
+         hlGoal('⏱ ออกกำลังกาย', v.exmin, HL_GOAL.exmin, 'นาที')+(v.standh!==undefined ? hlGoal('🧍 ชั่วโมงที่ลุกยืน', v.standh, HL_GOAL.standh, 'ชม.') : '')+'</div>';
+    if(v.active!==undefined && v.basal!==undefined){
+      var tot = v.active + v.basal, gap = tot - 2000;
+      h += '<div class="hl-cal"><div><small>เผาผลาญทั้งวัน</small><b>'+hlNum(tot)+' <span>kcal</span></b><small>ขยับ '+hlNum(v.active)+' + พื้นฐาน '+hlNum(v.basal)+'</small></div>'+
+           '<div class="hl-cal-r"><small>ถ้ากิน 2,000 kcal</small><b class="'+(gap>=0?'down':'up')+'">'+(gap>=0?'ขาด ':'เกิน ')+hlNum(Math.abs(gap))+'</b><small>'+(id===todayId?'วันยังไม่จบ ตัวเลขยังเพิ่มได้':'kcal ของวันนั้น')+'</small></div></div>';
+    }
+    var T = [['📏','ระยะเดิน/วิ่ง',v.km,1,'กม.'],['🪜','ขึ้นบันได',v.flights,0,'ชั้น'],['🚶','ความเร็วเดิน',v.wspeed,1,'กม./ชม.'],['☀️','อยู่กลางแจ้ง',v.daylight,0,'นาที'],
+             ['❤️','ชีพจรขณะพัก',v.rhr,0,'bpm'],['💓','ชีพจรตอนเดิน',v.walkhr,0,'bpm'],['📈','HRV',v.hrv,0,'ms'],['🩸','ออกซิเจนในเลือด',v.spo2,1,'%'],
+             ['😴','นอน',v.sleep,1,'ชม.'],['🌬️','อัตราการหายใจ',v.resp,1,'ครั้ง/นาที']].filter(function(t){ return t[2]!==undefined && t[2]!==null; });
+    if(T.length) h += '<div class="hl-tiles">'+T.map(function(t){ return '<div class="hl-s"><span class="hl-i">'+t[0]+'</span><b>'+hlNum(t[2], t[3])+'</b><span>'+t[4]+'</span><small>'+t[1]+'</small></div>'; }).join('')+'</div>';
     var wk = hlWeek().sort(function(a,b){ return (a.date+a.start).localeCompare(b.date+b.start); });
     h += '<p class="hl-sub">Workout สัปดาห์นี้</p><div class="hl-wk">'+(wk.length ? wk.map(function(w){
       return '<div class="hl-row"><span class="hl-ic">'+(HL_ICON[w.type]||'⚡')+'</span><span class="hl-n"><b>'+(HL_NAME[w.type]||'ออกกำลังกาย')+'</b> <small>'+HL_DAY[parseWeek(w.date).getDay()]+(w.start?' '+w.start:'')+'</small></span><span class="hl-v">'+esc(fmtW(w))+'</span></div>';
     }).join('') : '<p class="hint">ยังไม่มี Workout สัปดาห์นี้</p>')+'</div>';
     var labels=[], steps=[], rhr=[], mon = parseWeek(WEEK);
-    for(var i=11;i>=0;i--){
-      var m0 = addDays(mon,-7*i), s0 = weekIdOf(m0), e0 = weekIdOf(addDays(m0,6));
+    for(var j=11;j>=0;j--){
+      var m0 = addDays(mon,-7*j), s0 = weekIdOf(m0), e0 = weekIdOf(addDays(m0,6));
       var ds = Object.keys(HL.days||{}).filter(function(d){ return d>=s0 && d<=e0 && d<=todayId; }).map(function(d){ return HL.days[d]; });
       var a = ds.filter(function(x){ return x.steps!==undefined; }).map(function(x){ return x.steps; });
       var b = ds.filter(function(x){ return x.rhr!==undefined; }).map(function(x){ return x.rhr; });
@@ -1860,9 +1933,10 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       rhr.push(b.length ? Math.round(b.reduce(function(p,c){return p+c;},0)/b.length*10)/10 : null);
     }
     h += '<div class="hl-charts"><figure class="hl-chart"><figcaption>ก้าวเฉลี่ยต่อวัน · 12 สัปดาห์</figcaption>'+hlBars(steps, labels)+'</figure>'+
-         '<figure class="hl-chart"><figcaption>ชีพจรขณะพัก · 12 สัปดาห์</figcaption>'+hlLine(rhr, labels)+'</figure></div></div>';
-    return h;
+         '<figure class="hl-chart"><figcaption>ชีพจรขณะพัก · 12 สัปดาห์</figcaption>'+hlLine(rhr, labels)+'</figure></div>';
+    box.innerHTML = h;
   }
+  document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-hl-day]'); if(!b) return; hlSel = b.dataset.hlDay; renderHealth(); });
   var HCW=320, HCH=130, HPL=8, HPR=8, HPT=18, HPB=22;
   function hlAxis(labels){ var step=(HCW-HPL-HPR)/labels.length;
     return '<text x="'+(HPL+step/2)+'" y="'+(HCH-6)+'" text-anchor="middle" class="ax">'+labels[0]+'</text><text x="'+(HCW-HPR-step/2)+'" y="'+(HCH-6)+'" text-anchor="middle" class="ax">สัปดาห์นี้</text>'; }
