@@ -488,6 +488,39 @@ body.has-dock .toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
   .tile b{font-size:22px}
   .ed-item{grid-template-columns:1fr 70px 52px 34px}
 }
+/* ---------- APPLE WATCH (health sync) ---------- */
+.hl-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.hl-day{grid-column:1/-1;margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hl-s{background:var(--bg);border-radius:14px;padding:10px 6px;text-align:center;display:grid;gap:1px;min-width:0}
+.hl-s b{font-family:var(--mono);font-weight:600;font-size:18px;font-variant-numeric:tabular-nums;overflow:hidden;text-overflow:ellipsis}
+.hl-s span{font-size:11px;color:var(--muted)}
+.hl-s small{font-size:11.5px;font-weight:600}
+.hl-sub{margin:12px 0 6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hl-wk{display:grid;gap:6px}
+.hl-row{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;padding:8px 10px;border-radius:12px;background:var(--bg)}
+.hl-ic{font-size:18px;text-align:center}
+.hl-n small{color:var(--muted)}
+.hl-v{font-family:var(--mono);font-size:12.5px;font-weight:600;white-space:nowrap}
+.hl-charts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.hl-chart{margin:0;background:var(--bg);border-radius:14px;padding:10px 10px 4px;min-width:0}
+.hl-chart figcaption{font-size:12.5px;font-weight:600;margin-bottom:4px}
+.hl-chart svg{width:100%;height:auto;display:block}
+.hl-chart .ax{font-size:10px;fill:var(--muted);font-family:var(--body)}
+.hl-chart .val{font-size:11px;fill:var(--ink);font-family:var(--mono);font-weight:600}
+.hl-chart .base{stroke:var(--line);stroke-width:1}
+.hl-chart .bar{fill:var(--orange);opacity:.45}
+.hl-chart .bar.cur{opacity:1}
+.hl-chart .hln{fill:none;stroke:var(--red);stroke-width:2;stroke-linejoin:round}
+.hl-chart .pt{fill:var(--red);stroke:var(--bg);stroke-width:2}
+.watch{font-size:13px;font-weight:600;padding:7px 12px;border-radius:12px;background:var(--green-soft);color:var(--green);margin-top:8px}
+.filebtn{display:inline-block;cursor:pointer;padding:9px 16px;border-radius:12px;font-weight:700;border:2px dashed var(--line);color:var(--ink)}
+.filebtn:hover{border-color:var(--fire2);color:var(--fire2)}
+@media (max-width:460px){
+  .hl-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .hl-charts{grid-template-columns:1fr}
+  .hl-row{grid-template-columns:28px minmax(0,1fr)}
+  .hl-v{grid-column:2;white-space:normal}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation-duration:.01ms!important}}
 </style>
 <style>
@@ -1062,6 +1095,8 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     h += '<div class="slot-band"><h3>'+SLOT_LABEL[sn]+' · '+esc(slot.title)+(slot.badge?' <small>'+esc(slot.badge)+'</small>':'')+'</h3>'+
          '<div class="chips"><span class="chip mono">'+esc(slot.time||'')+'</span><button type="button" class="go-btn" data-wo-start="'+day.d+'|'+sn+'">▶ เริ่ม</button></div></div>';
     h += '<div class="slot-body">';
+    var aw = watchFor(day, sn);
+    if(aw) h += '<div class="watch">⌚ บันทึกจาก Apple Watch · '+esc(fmtW(aw))+'</div>';
     if(slot.note) h += '<p class="slot-note">'+esc(slot.note)+'</p>';
     slot.groups.forEach(function(g){
       if(g.part) h += '<p class="part">'+esc(partOf(slot, g))+'</p>';
@@ -1247,6 +1282,7 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       '<div class="tile"><b>'+daysDone+'</b><small>วันที่ซ้อมครบ</small></div>'+
       '<div class="tile"><b>'+sets+'</b><small>เซตทั้งหมด</small></div>'+
       '<div class="tile"><b>'+ids.filter(function(w){ return weeks[w].updatedAt; }).length+'</b><small>สัปดาห์ที่บันทึก</small></div></div>';
+    h += healthPanel();
     h += '<div class="panel"><div class="panel-h"><h3>⚖️ น้ำหนักตัว</h3></div>'+bwChart(weeks)+'</div>';
     h += '<div class="panel"><div class="panel-h"><h3>🗓 16 สัปดาห์ล่าสุด</h3></div>'+heatmap(weeks)+
       '<div class="cal-legend"><span><i class="sw-done"></i>ซ้อมครบ</span><span><i class="sw-part"></i>บางส่วน</span><span><i class="sw-miss"></i>พลาด</span></div></div>';
@@ -1351,6 +1387,9 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
       sw('push','เปิดการแจ้งเตือนในเครื่องนี้')+
       (SET.push ? '<button type="button" class="btn block" data-push-test>ส่งแจ้งเตือนทดสอบตอนนี้</button>' : '')+
       '<p class="msg" id="pushMsg">'+esc(pushMsg)+'</p></div>';
+    h += '<div class="sec"><h4>⌚ Apple Watch</h4><p class="hint" style="margin-bottom:8px">iPhone ส่งข้อมูลสุขภาพมาให้ทุกคืนผ่าน Shortcut (ดูวิธีตั้งใน SETUP-HEALTH.md) · นำเข้าข้อมูลย้อนหลังจากไฟล์ <b>health-digest.json</b> ได้ที่นี่ ครั้งเดียวพอ</p>'+
+      '<label class="filebtn" for="hlImport">📥 นำเข้าไฟล์ .json</label><input id="hlImport" type="file" accept=".json,application/json" hidden>'+
+      '<p class="msg" id="hlMsg">'+esc(hlMsg)+'</p></div>';
     h += '<div class="sec"><h4>📝 ตารางซ้อม</h4><p class="hint" style="margin-bottom:8px">แก้ชื่อท่า น้ำหนัก จำนวนเซต เวลาพัก ได้เอง ทุกเครื่องที่ซิงก์จะเห็นตารางเดียวกัน</p>'+
       '<button type="button" class="btn block main" data-edit>✏️ แก้ตารางซ้อม</button></div>';
     if(unlocked()) h += '<div class="sec"><button type="button" class="btn block" data-lock-now>🔒 ล็อกตอนนี้</button></div>';
@@ -1754,7 +1793,119 @@ body{margin:0} img{max-width:100%} [hidden]{display:none!important}
     }
   }
 
-  renderAll(); fillLog(); pull(); syncWake();
+  /* ---------- APPLE WATCH: health data sent nightly by an iOS Shortcut (api/southpaw-health.mjs) ----------
+     The server ticks the matching slot when a workout arrives; this part only shows the numbers. */
+  var HL_API = '/api/southpaw-health', HL_KEY = 'southpaw-health';
+  var HL = lsJSON(HL_KEY, null) || {days:{}, workouts:[], updatedAt:0}, hlLoading = false, hlMsg = '';
+  var HL_SLOT = {JumpRope:['rope','cardio'], Running:['cardio','rope'], Strength:['str'], Boxing:['box']};
+  var HL_MIN = {JumpRope:8, Running:15, Strength:15, Boxing:15};
+  var HL_ICON = {JumpRope:'🪢', Running:'🏃', Strength:'🏋️', Boxing:'🥊', Walking:'🚶', Cycling:'🚴', Other:'⚡'};
+  var HL_NAME = {JumpRope:'กระโดดเชือก', Running:'วิ่ง', Strength:'เวท', Boxing:'มวย', Walking:'เดิน', Cycling:'ปั่นจักรยาน', Other:'ออกกำลังกาย'};
+  var HL_DAY = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+  function fmtW(w){ var p=[]; if(w.min) p.push(Math.round(w.min)+' นาที'); if(w.km) p.push(w.km+' กม.'); if(w.kcal) p.push(Math.round(w.kcal)+' kcal'); if(w.hr_avg) p.push('HR '+Math.round(w.hr_avg)); return p.join(' · '); }
+  function hlWeek(){ var end = weekIdOf(addDays(parseWeek(WEEK),6)); return ((HL||{}).workouts||[]).filter(function(w){ return w.date>=WEEK && w.date<=end; }); }
+  // which of this week's watch workouts covers a slot (same rules the server uses to tick it)
+  function watchFor(day, sn){
+    var sl = day[sn]; if(!sl || day.rest) return null;
+    var used = {}, hit = null;
+    hlWeek().sort(function(a,b){ return (a.date+a.start).localeCompare(b.date+b.start); }).forEach(function(w){
+      var types = HL_SLOT[w.type]; if(!types || (w.min||0) < HL_MIN[w.type]) return;
+      var d = parseWeek(w.date).getDay(), dd = DAYS[d]; if(!dd || dd.rest) return;
+      for(var i=0;i<types.length;i++){
+        var s2 = ['am','pm'].filter(function(x){ return dd[x] && dd[x].type===types[i] && !used[d+x]; })[0];
+        if(s2){ used[d+s2] = w; return; }
+      }
+    });
+    return used[day.d+sn] || null;
+  }
+  function loadHealth(){
+    if(hlLoading) return; hlLoading = true;
+    var to = weekIdOf(addDays(parseWeek(WEEK),6)), from = weekIdOf(addDays(parseWeek(WEEK),-77));
+    fetch(HL_API+'?from='+from+'&to='+to).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+      if(!j) return;
+      var next = {days:j.days||{}, workouts:j.workouts||[], updatedAt:+j.updatedAt||0};
+      if(JSON.stringify(next) === JSON.stringify(HL)) return;
+      HL = next; lsSet(HL_KEY, JSON.stringify(HL));
+      if(!typing()) renderAll();
+    }).catch(function(){}).then(function(){ hlLoading = false; });
+  }
+  function hlAgo(ts){ var m=Math.round((Date.now()-ts)/60000); if(m<60) return m+' นาทีที่แล้ว'; var h=Math.round(m/60); if(h<24) return h+' ชม.ที่แล้ว'; return Math.round(h/24)+' วันที่แล้ว'; }
+  function healthPanel(){
+    if(!HL) return '';
+    var todayId = weekIdOf(new Date()), yId = weekIdOf(addDays(new Date(),-1));
+    var ids = Object.keys(HL.days||{}).filter(function(d){ return d<=todayId; }).sort();
+    var head = '<div class="panel-h"><h3>⌚ Apple Watch<small>'+(HL.updatedAt ? 'อัปเดต '+hlAgo(HL.updatedAt) : 'ยังไม่มีข้อมูล · ตั้ง Shortcut ตามคู่มือ')+'</small></h3></div>';
+    if(!ids.length && !(HL.workouts||[]).length) return '<div class="panel">'+head+'<p class="hint">เมื่อ iPhone ส่งข้อมูลมา จะเห็นก้าวเดิน kcal ชีพจร และ Workout ที่นี่ และช่องเชือก/วิ่ง/เวท/มวยจะติ๊กให้เอง</p></div>';
+    var last = ids[ids.length-1], v = last ? HL.days[last] : {};
+    var lbl = !last ? '' : last===todayId ? 'วันนี้' : last===yId ? 'เมื่อวาน' : parseWeek(last).getDate()+'/'+(parseWeek(last).getMonth()+1);
+    function stat(val, unit, name){ return '<div class="hl-s"><b>'+(val===undefined||val===null?'–':val)+'</b><span>'+unit+'</span><small>'+name+'</small></div>'; }
+    var h = '<div class="panel">'+head+'<div class="hl-stats"><p class="hl-day">'+lbl+'</p>'+
+      stat(v.steps!==undefined?Math.round(v.steps).toLocaleString('en-US'):undefined,'ก้าว','เดิน')+
+      stat(v.km,'กม.','ระยะเดิน/วิ่ง')+
+      stat(v.active!==undefined?Math.round(v.active):undefined,'kcal','เผาผลาญ')+
+      stat(v.exmin!==undefined?Math.round(v.exmin):undefined,'นาที','ออกกำลังกาย')+
+      stat(v.rhr!==undefined?Math.round(v.rhr):undefined,'bpm','ชีพจรขณะพัก')+'</div>';
+    var wk = hlWeek().sort(function(a,b){ return (a.date+a.start).localeCompare(b.date+b.start); });
+    h += '<p class="hl-sub">Workout สัปดาห์นี้</p><div class="hl-wk">'+(wk.length ? wk.map(function(w){
+      return '<div class="hl-row"><span class="hl-ic">'+(HL_ICON[w.type]||'⚡')+'</span><span class="hl-n"><b>'+(HL_NAME[w.type]||'ออกกำลังกาย')+'</b> <small>'+HL_DAY[parseWeek(w.date).getDay()]+(w.start?' '+w.start:'')+'</small></span><span class="hl-v">'+esc(fmtW(w))+'</span></div>';
+    }).join('') : '<p class="hint">ยังไม่มี Workout สัปดาห์นี้</p>')+'</div>';
+    var labels=[], steps=[], rhr=[], mon = parseWeek(WEEK);
+    for(var i=11;i>=0;i--){
+      var m0 = addDays(mon,-7*i), s0 = weekIdOf(m0), e0 = weekIdOf(addDays(m0,6));
+      var ds = Object.keys(HL.days||{}).filter(function(d){ return d>=s0 && d<=e0 && d<=todayId; }).map(function(d){ return HL.days[d]; });
+      var a = ds.filter(function(x){ return x.steps!==undefined; }).map(function(x){ return x.steps; });
+      var b = ds.filter(function(x){ return x.rhr!==undefined; }).map(function(x){ return x.rhr; });
+      labels.push(m0.getDate()+'/'+(m0.getMonth()+1));
+      steps.push(a.length ? Math.round(a.reduce(function(p,c){return p+c;},0)/a.length) : null);
+      rhr.push(b.length ? Math.round(b.reduce(function(p,c){return p+c;},0)/b.length*10)/10 : null);
+    }
+    h += '<div class="hl-charts"><figure class="hl-chart"><figcaption>ก้าวเฉลี่ยต่อวัน · 12 สัปดาห์</figcaption>'+hlBars(steps, labels)+'</figure>'+
+         '<figure class="hl-chart"><figcaption>ชีพจรขณะพัก · 12 สัปดาห์</figcaption>'+hlLine(rhr, labels)+'</figure></div></div>';
+    return h;
+  }
+  var HCW=320, HCH=130, HPL=8, HPR=8, HPT=18, HPB=22;
+  function hlAxis(labels){ var step=(HCW-HPL-HPR)/labels.length;
+    return '<text x="'+(HPL+step/2)+'" y="'+(HCH-6)+'" text-anchor="middle" class="ax">'+labels[0]+'</text><text x="'+(HCW-HPR-step/2)+'" y="'+(HCH-6)+'" text-anchor="middle" class="ax">สัปดาห์นี้</text>'; }
+  function hlLast(vals){ var i = vals.length-1; while(i>=0 && vals[i]===null) i--; return i; }
+  function hlBars(vals, labels){
+    var ok = vals.filter(function(v){ return v!==null; }); if(!ok.length) return '<p class="hint">ยังไม่มีข้อมูล</p>';
+    var max = Math.max.apply(null, ok), n = vals.length, step = (HCW-HPL-HPR)/n, bw = step-2, base = HCH-HPB, hgt = base-HPT, g = '<line x1="'+HPL+'" x2="'+(HCW-HPR)+'" y1="'+base+'" y2="'+base+'" class="base"/>';
+    vals.forEach(function(v,i){ if(v===null) return; var hh = Math.max(4, v/max*hgt), x = HPL+i*step+1, y = base-hh;
+      g += '<path class="bar'+(i===n-1?' cur':'')+'" d="M'+x+','+base+'V'+(y+4)+'q0,-4 4,-4h'+(bw-8)+'q4,0 4,4V'+base+'Z"><title>สัปดาห์ '+labels[i]+': '+v.toLocaleString('en-US')+' ก้าว/วัน</title></path>'; });
+    var li = hlLast(vals);
+    return '<svg viewBox="0 0 '+HCW+' '+HCH+'" role="img" aria-label="ก้าวเฉลี่ยต่อวันรายสัปดาห์">'+g+'<text x="'+HPL+'" y="11" class="ax">สูงสุด '+max.toLocaleString('en-US')+'</text><text x="'+(HCW-HPR)+'" y="11" text-anchor="end" class="val">'+vals[li].toLocaleString('en-US')+' ก้าว</text>'+hlAxis(labels)+'</svg>';
+  }
+  function hlLine(vals, labels){
+    var ok = vals.filter(function(v){ return v!==null; }); if(!ok.length) return '<p class="hint">ยังไม่มีข้อมูล</p>';
+    var lo = Math.floor(Math.min.apply(null, ok))-2, hi = Math.ceil(Math.max.apply(null, ok))+2, n = vals.length, step = (HCW-HPL-HPR)/n, base = HCH-HPB;
+    var X = function(i){ return HPL+i*step+step/2; }, Y = function(v){ return HPT+(hi-v)/(hi-lo)*(base-HPT); };
+    var d = '', pts = '';
+    vals.forEach(function(v,i){ if(v===null) return; d += (d?'L':'M')+X(i).toFixed(1)+','+Y(v).toFixed(1);
+      pts += '<circle cx="'+X(i).toFixed(1)+'" cy="'+Y(v).toFixed(1)+'" r="'+(i===n-1?5:3.5)+'" class="pt"><title>สัปดาห์ '+labels[i]+': '+v+' bpm</title></circle>'; });
+    var li = hlLast(vals);
+    return '<svg viewBox="0 0 '+HCW+' '+HCH+'" role="img" aria-label="ชีพจรขณะพักรายสัปดาห์"><line x1="'+HPL+'" x2="'+(HCW-HPR)+'" y1="'+base+'" y2="'+base+'" class="base"/><path d="'+d+'" class="hln"/>'+pts+
+      '<text x="'+HPL+'" y="11" class="ax">ช่วง '+Math.min.apply(null,ok)+'–'+Math.max.apply(null,ok)+' bpm</text><text x="'+(HCW-HPR)+'" y="11" text-anchor="end" class="val">'+vals[li]+' bpm</text>'+hlAxis(labels)+'</svg>';
+  }
+  function hlSay(t){ hlMsg = t; var el = $('hlMsg'); if(el) el.textContent = t; }
+  function hlImport(file){
+    hlSay('กำลังนำเข้า…');
+    file.text().then(function(t){
+      var j = JSON.parse(t); if(!j || !j.days) throw new Error('format');
+      return apiFetch(HL_API, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({days:j.days, workouts:j.workouts||[]})});
+    }).then(function(r){
+      if(r.status === 401){ relock(); hlSay('ล็อกแล้ว · ใส่รหัสแล้วลองใหม่'); return; }
+      if(!r.ok){ hlSay('นำเข้าไม่สำเร็จ (เซิร์ฟเวอร์ตอบ '+r.status+')'); return; }
+      return r.json().then(function(j){ hlSay('นำเข้าแล้ว ✓ '+j.days.length+' วัน · '+j.workouts+' Workout'+(j.ticked ? ' · ติ๊กให้ '+j.ticked+' ช่อง' : '')); loadHealth(); pull(true); });
+    }).catch(function(e){ hlSay(e && e.message === 'format' ? 'ไฟล์นี้ไม่ใช่ health-digest.json' : 'นำเข้าไม่สำเร็จ ลองใหม่อีกครั้ง'); });
+  }
+  document.addEventListener('change', function(e){
+    var t = e.target; if(!t || t.id !== 'hlImport') return;
+    var f = t.files && t.files[0]; t.value = ''; if(!f) return;
+    if(canWrite()) hlImport(f); else askPin(function(){ hlImport(f); });
+  });
+  document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'visible') loadHealth(); });
+
+  renderAll(); fillLog(); pull(); syncWake(); loadHealth();
   loadHistory().then(function(){ if(pane !== 'day') renderPane(); else renderView(); });
 })();
 </script>
